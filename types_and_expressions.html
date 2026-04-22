@@ -1,0 +1,293 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Types &amp; Their Expressions - Par Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Par programming language">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Par Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/types_and_expressions.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="types--their-expressions"><a class="header" href="#types--their-expressions">Types &amp; Their Expressions</a></h1>
+<p>Types in Par serve two seemingly incompatible purposes at the same time:</p>
+<ul>
+<li>Objects of every-day programming, like functions and pairs.</li>
+<li><a href="https://en.wikipedia.org/wiki/Session_type">Session-typed</a> communication channels.</li>
+</ul>
+<p>In the world of linear logic, these are the same thing. But to make this
+connection harmonious and ergonomic, some unusual choices have to be made in the design of
+the basic building blocks.</p>
+<p><strong>Types in Par are sequential.</strong> The basic building blocks — pairs, functions, eithers (sums),
+and choices (co-sums) — all read as <strong>first this, then that.</strong></p>
+<p>Let’s take pairs. In many programming language, <code>(A, B)</code> is the type of a pair of <code>A</code> and <code>B</code>.
+This approach is not sequential: both types assume equal position.</p>
+<p>In Par, the pair type is instead <code>(A) B</code>. The second type being outside of the parentheses is
+essential. It allows us to sequentially continue the type without the burden of nesting.</p>
+<p>Compare <code>(A, (B, (C, D)))</code> against <code>(A) (B) (C) D</code>.</p>
+<p>Of course, most languages that provide <code>(A, B)</code> pairs also support triples <code>(A, B, C)</code>, and
+quadruples <code>(A, B, C, D)</code>, so let’s mix it up!</p>
+<p>The usual syntax for function types is <code>A -&gt; B</code>. That is sequential, but in Par we have a syntax
+that plays more nicely with the pairs: <code>[A] B</code>. Now compare</p>
+<ul>
+<li><code>(A, B -&gt; (C, D -&gt; E))</code></li>
+</ul>
+<p>versus</p>
+<ul>
+<li><code>(A) [B] (C) [D] E</code></li>
+</ul>
+<p>We can read it as: <em>first give <code>A</code>, then take <code>B</code>, then give <code>C</code>, then take <code>D</code>, and finally give <code>E</code>.</em></p>
+<p>This is starting to look a lot like session types! An alternative reading of the type could be:
+<em>first send <code>A</code>, then receive <code>B</code>, then send <code>C</code>, then receive <code>D</code>, and finally proceed as <code>E</code>.</em></p>
+<p>And that, in a nutshell, is how Par unifies every-day types with session types.</p>
+<p><strong>This chapter covers the every-day aspect of types in Par.</strong> For the session-typed, process-oriented
+aspect, check out <a href="./process_syntax.html">The Process Syntax</a>.</p>
+<h2 id="linearity"><a class="header" href="#linearity">Linearity</a></h2>
+<p>Par is based on <a href="https://en.wikipedia.org/wiki/Linear_logic">linear logic</a>, and with that comes a
+<strong>linear type system.</strong> That means: <strong>some values must be used exactly once.</strong></p>
+<p>These are called <strong>linear values.</strong> You can’t copy them, and you can’t throw them away.
+They must be consumed, <strong>exactly once</strong> — in a way their type allows.</p>
+<p>This might sound limiting, but it opens the door to something powerful.</p>
+<p>When a value must be used — and can only be used once — it becomes possible to <strong>model communication.</strong>
+Think about a channel that expects you to send a message. If you don’t send one — or send
+two — things fall apart.</p>
+<p>With linearity, Par gives you channels where that simply can’t happen.</p>
+<p>That’s the foundation of <a href="https://en.wikipedia.org/wiki/Session_type">session types</a>,
+and Par supports them at its core.</p>
+<p>But not every type needs that kind of strictness. Some values should be copyable, droppable,
+and passed around freely.</p>
+<p>So Par distinguishes between:</p>
+<ul>
+<li><strong>Linear types,</strong> which must be used exactly once.</li>
+<li><strong>Non-linear types,</strong> which can be used any number of times — including zero.</li>
+</ul>
+<p>Let’s look at what falls into each category.</p>
+<h3 id="which-types-are-non-linear"><a class="header" href="#which-types-are-non-linear">Which types are non-linear?</a></h3>
+<p>These are:</p>
+<ul>
+<li>All <a href="./structure/primitive_types.html"><strong>primitives</strong></a>: <code>Int</code>, <code>Nat</code>, <code>String</code>, <code>Char</code></li>
+<li><a href="./types/unit.html"><strong>Unit</strong></a></li>
+<li><a href="./types/either.html"><strong>Either</strong></a></li>
+<li><a href="./types/pair.html"><strong>Pair</strong></a></li>
+<li><a href="./types/recursive.html"><strong>Recursive</strong></a></li>
+<li><a href="./types/box.html"><strong>Box</strong></a></li>
+<li><a href="./types/exists.html"><strong>Exists</strong></a>, only if the body is non-linear — which is rare, since the
+type variable it introduces is itself linear</li>
+<li>Any type <strong>composed entirely</strong> of non-linear parts</li>
+</ul>
+<h3 id="which-types-are-linear"><a class="header" href="#which-types-are-linear">Which types are linear?</a></h3>
+<p>All the rest:</p>
+<ul>
+<li><a href="./types/function.html"><strong>Function</strong></a></li>
+<li><a href="./types/choice.html"><strong>Choice</strong></a></li>
+<li><a href="./types/iterative.html"><strong>Iterative</strong></a></li>
+<li><a href="./types/exists.html"><strong>Exists</strong></a>, <strong>in most cases,</strong> because they introduce a linear type variable</li>
+<li><a href="./types/forall.html"><strong>Forall</strong></a></li>
+<li><a href="./types/continuation.html"><strong>Continuation</strong></a></li>
+<li>Any type that <strong>contains</strong> a linear component, even deeply</li>
+</ul>
+<p>If a type has a linear piece <strong>anywhere inside it,</strong> it becomes linear — unless that part is
+wrapped in a <a href="./types/box.html">box</a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="structure/let_expressions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="types/unit.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="structure/let_expressions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="types/unit.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

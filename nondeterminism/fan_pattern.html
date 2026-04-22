@@ -1,0 +1,349 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Fan Pattern - Par Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Par programming language">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Par Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/nondeterminism/fan_pattern.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="the-fan-pattern"><a class="header" href="#the-fan-pattern">The Fan Pattern</a></h1>
+<p>We’ve been able to merge two lists based on the timing of their items:</p>
+<pre><code class="language-par">module Main
+
+import @core/List
+
+dec MergeTwoLists : &lt;a&gt;[List&lt;a&gt;] [List&lt;a&gt;] List&lt;a&gt;
+def MergeTwoLists = [left, right] poll(left, right) {
+  list =&gt; list.case {
+    .end! =&gt; submit(),
+    .item(x) xs =&gt; .item(x) submit(xs),
+  }
+  else =&gt; .end!,
+}
+</code></pre>
+<p>And also a tree:</p>
+<pre><code class="language-par">dec TreeToList : &lt;a&gt;[Tree&lt;a&gt;] List&lt;a&gt;
+def TreeToList = &lt;a&gt;[tree] poll(tree) {
+  tree =&gt; tree.case {
+    .leaf x =&gt; .item(x) submit(),
+    .node(l) r =&gt; submit(l, r),
+  }
+  else =&gt; .end!,
+}
+</code></pre>
+<p>Merging multiple sources of information this way is great when you need to aggregate from multiple, slow-producing sources into a single stream, where you can react immediately to every bit produced.</p>
+<p><strong>What about merging a list of lists?</strong></p>
+<pre><code class="language-par">dec MergeLists : &lt;a&gt;[List&lt;List&lt;a&gt;&gt;] List&lt;a&gt;
+def MergeLists = ???
+</code></pre>
+<p>If we want to merge them in the order their items are produced, <strong>we run into a problem with <code>poll</code>/<code>submit</code>.</strong></p>
+<p>That’s because a pool requires all its clients to be of the same type. But if we put a <code>List&lt;List&lt;a&gt;&gt;</code> into a pool, we get back a <code>List&lt;List&lt;a&gt;&gt;</code>. We still don’t know which of the inner lists to poll from!</p>
+<blockquote>
+<p>We can actually solve this by combining <code>poll</code>/<code>submit</code> with <code>.begin</code>/<code>.loop</code>.</p>
+<pre><code class="language-par">dec MergeLists : &lt;a&gt;[List&lt;List&lt;a&gt;&gt;] List&lt;a&gt;
+def MergeLists = &lt;a&gt;[lists] lists.begin.case {
+  .end! =&gt; .end!,
+  .item(list) lists =&gt; poll(list, lists.loop) {
+    list =&gt; list.case {
+      .end! =&gt; submit(),
+      .item(x) xs =&gt; .item(x) submit(xs),
+    }
+    else =&gt; .end!,
+  }
+}
+</code></pre>
+<p>In this solution, the pool contains lists. However, we end up creating a new pool for every single list, essentially ending up with a linked (by <code>poll</code>) list of pools. It works, but is quite inefficient.</p>
+</blockquote>
+<p><strong>The efficient solution</strong> is to transform the <code>List&lt;List&lt;a&gt;&gt;</code> into a structure that is suitable for polling! We call it <strong>the <em>fan</em> pattern.</strong></p>
+<h2 id="fans-the-homogeneous-trees"><a class="header" href="#fans-the-homogeneous-trees">Fans: the homogeneous trees</a></h2>
+<p>Why does <code>poll</code> work great for <code>List&lt;a&gt;</code> and <code>Tree&lt;a&gt;</code>, but not for <code>List&lt;List&lt;a&gt;&gt;</code>? It’s because both <code>List&lt;a&gt;</code> and <code>Tree&lt;a&gt;</code> are <em>homogeneous.</em> Here’s what I mean:</p>
+<pre><code class="language-par">type List&lt;a&gt; = recursive either {
+  .end!,
+  .item(x) self,
+}
+
+type Tree&lt;a&gt; = recursive either {
+  .leaf a,
+  .node(self) self,
+}
+</code></pre>
+<p><strong>Every <code>self</code> goes back to the same shape.</strong> That’s not true for a list of lists! In a <code>List&lt;List&lt;a&gt;&gt;</code>, the outer nodes are:</p>
+<pre><code class="language-par">recursive either {
+  .end!,
+  .item(List&lt;a&gt;) self,
+}
+</code></pre>
+<p>While the inner nodes (the <code>List&lt;a&gt;</code>) are:</p>
+<pre><code class="language-par">recursive either {
+  .end!,
+  .item(a) self,
+}
+</code></pre>
+<p>That’s the discrepancy that prevents a clean <code>poll</code> usage.</p>
+<h2 id="the-fan-transformation"><a class="header" href="#the-fan-transformation">The <em>fan</em> transformation</a></h2>
+<p>To remedy this, we need to transform a <code>List&lt;List&lt;a&gt;&gt;</code> into a more suitable structure. Here’s one that will work:</p>
+<pre><code class="language-par">type ListFan&lt;a&gt; = recursive either {
+  .end!,
+  .spawn(self) self,
+  .item(a) self,
+}
+</code></pre>
+<p>There’s no general prescription for designing these: it all depends on the use-case. However, these branches will appear quite frequently:</p>
+<pre><code class="language-par">  .end!,
+  .spawn(self) self,
+</code></pre>
+<p>They allow the structure to <strong>dynamically spread into multiple agents,</strong> while the other branches handle the behavior of a single one: an individual list in this case.</p>
+<p>The transformation is quite simple:</p>
+<pre><code class="language-par">dec ListFan : &lt;a&gt;[List&lt;List&lt;a&gt;&gt;] ListFan&lt;a&gt;
+def ListFan = &lt;a&gt;[lists] lists.begin.case {
+  .end! =&gt; .end!,
+  .item(list) lists =&gt; .spawn(
+    list.begin.case {
+      .end! =&gt; .end!,
+      .item(x) xs =&gt; .item(x) xs.loop,
+    }
+  ) lists.loop,
+}
+</code></pre>
+<p>It consists of two nested recursions.</p>
+<ul>
+<li>
+<p>The outer one produces a <code>.spawn</code> node for each list.</p>
+</li>
+<li>
+<p>The inner one produces an <code>.item</code> node for each item of a list.</p>
+</li>
+<li>
+<p>The <code>.end</code> node in the resulting fan structure is used in two ways:</p>
+<ol>
+<li>To say there will be no more lists.</li>
+<li>To mark an end of a single list.</li>
+</ol>
+<p>The consumer of the <code>ListFan&lt;a&gt;</code> does not need to differentiate between these two.</p>
+</li>
+</ul>
+<p><strong>Importantly, the transformation is <em>on-line:</em></strong> Each part of the input immediately produces a part of the output. As a result, no concurrency or timing information is lost, with Par’s concurrent execution model.</p>
+<p><strong>Now, we’re able to implement <code>MergeLists</code> easily:</strong></p>
+<pre><code class="language-par">dec MergeLists : &lt;a&gt;[List&lt;List&lt;a&gt;&gt;] List&lt;a&gt;
+def MergeLists = &lt;a&gt;[lists] poll(ListFan(lists)) {
+  fan =&gt; fan.case {
+    .end! =&gt; submit(),
+    .spawn(l) r =&gt; submit(l, r),
+    .item(x) fan =&gt; .item(x) submit(fan),
+  }
+  else =&gt; .end!,
+}
+</code></pre>
+<blockquote>
+<p>💡 <strong>For the theory lovers:</strong> The above covers the <a href="https://dl.acm.org/doi/abs/10.1145/3473567"><strong><em>Client-server sessions in linear logic</em></strong></a> paper. The coexponentials introduced there can be defined as:</p>
+<pre><code class="language-par">type Cobang = dual ListFan&lt;dual a&gt;
+type Coquest = List&lt;a&gt;
+</code></pre>
+<p>The axiom rule for them is then implemented the same way as the <code>MergeLists</code> function, except taking a <code>ListFan&lt;a&gt;</code> directly, instead of a <code>List&lt;List&lt;a&gt;&gt;</code>.</p>
+</blockquote>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../nondeterminism/poll_submit.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../nondeterminism/both_ways.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../nondeterminism/poll_submit.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../nondeterminism/both_ways.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Introduction - Par Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Par programming language">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Par Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/introduction.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p><strong>Par</strong> is affectionately named after the most bemusing connective of
+<a href="https://en.wikipedia.org/wiki/Linear_logic">linear logic</a>: ⅋, pronounced <em>“par”</em>.
+That’s because Par is based directly on (classical) linear logic, as an experiment to
+see where this paradigm can take us.</p>
+<p><a href="https://en.wikipedia.org/wiki/Jean-Yves_Girard">Jean-Yves Girard</a> — the author of linear logic,
+and <a href="https://en.wikipedia.org/wiki/System_F">System F</a>, among other things — wrote on the page 3
+of his <a href="https://www.sciencedirect.com/science/article/pii/0304397587900454">first paper on linear logic</a>:</p>
+<blockquote>
+<p>The new connectives of linear logic have obvious meanings in terms of
+parallel computation, especially the multiplicatives.</p>
+</blockquote>
+<p>This was in 1987. In hindsight, it wasn’t that obvious.</p>
+<p>Par is an attempt to take that idea seriously — to turn linear logic into a practical programming language.</p>
+<h2 id="why-par"><a class="header" href="#why-par">Why <em>Par</em>?</a></h2>
+<p>Based on linear logic, Par has a <strong>linear type system.</strong> That’s close to what you know from Rust:
+linear values have a single owner and are moved instead of copied.
+But unlike in Rust, linear values <strong>cannot be dropped.</strong> Instead, they have to be consumed according to their type.</p>
+<p>This unlocks something special: channels that may only be consumed by sending.
+Now the receiver has a new guarantee — it no longer has to consider the sender forgetting to communicate.</p>
+<p>As a consequence, <strong>concurrent communication</strong> is as transparent and composable in Par as calling functions.
+Together with Par’s imposition of a tree-like communication structure — <strong>ruling out deadlocks</strong> — a new
+promising way of building concurrent applications arises.</p>
+<p>But, Par isn’t just a concurrent language.</p>
+<p>Classical linear logic is a beast, and a powerful one
+at that. Par absorbs all this power into its own expressivity. With <a href="./processes/duality.html"><strong>duality,</strong></a>
+<strong>session types,</strong> and a rich set of concepts all mapping to logical connectives,
+multiple paradigms emerge naturally:</p>
+<ul>
+<li><strong>Functional programming</strong> with side-effects via linear handles.</li>
+<li>A <strong>unique object-oriented style,</strong> where interfaces are just types and implementations are just values.</li>
+<li>An <strong>implicit concurrency,</strong> where execution is non-blocking by default.</li>
+</ul>
+<p>Multi-paradigm language often burden its users with multiple ways to solve the same problem.</p>
+<p>But, somewhat surprisingly, we found that in Par, <strong>any single problem tends to have a single best solution.</strong>
+That solution may be functional, object-oriented, a mix of those, or something else entirely.</p>
+<p>Whichever one it is, it always puts a new puzzle into something there underneath: <strong>the <em>Par</em> way.</strong></p>
+<h2 id="orthogonality-goes-wide-not-deep"><a class="header" href="#orthogonality-goes-wide-not-deep">Orthogonality goes <em>wide,</em> not deep</a></h2>
+<p>Par doesn’t have dependent types, metaprogramming, higher-order kinds, or a macro system.
+Instead of going deeper into complexity, <strong>Par goes wider.</strong></p>
+<p>Its design focuses on small, composable ideas. For Par, it’s not that important to have a <em>small number</em>
+of features. What’s important is that <em>each feature is small,</em> and covers something no other feature does.</p>
+<p>Most of those ideas are taken directly from classical linear logic.
+Every type corresponds to a logical connective. Even recursion! This has two consequences:</p>
+<ul>
+<li><strong>Everything fits together.</strong> Almost any combination of features has a meaningful use.</li>
+<li><strong>Everything is a little different.</strong> For better or worse, Par is one of its kind.</li>
+</ul>
+<p>The former is great. The latter means Par might feel like learning programming all over again.
+Will that be worthwhile? We’re going to have to find out.</p>
+<h2 id="an-ambitious-stride-towards-totality"><a class="header" href="#an-ambitious-stride-towards-totality">An ambitious stride towards <em>totality</em></a></h2>
+<p>As if session types and concurrency weren’t enough, Par also aims to be <strong>total.</strong></p>
+<p>That means:</p>
+<ul>
+<li><strong>No exceptions or panics.</strong></li>
+<li><strong>No deadlocks.</strong> Par imposes a structure where deadlocks are impossible to express.</li>
+<li><strong>No accidental non-termination.</strong> By default, recursion and corecursion are checked to prevent infinite loops.</li>
+</ul>
+<blockquote>
+<p>No infinite loops? How do I write a web server or an event loop? Don’t worry, that’s not infinite loops,
+that’s what we call <em>corecursion.</em> It’s covered thoroughly by <a href="./types/iterative.html">iterative</a> types
+with totality ensuring they always advance to their next step.</p>
+</blockquote>
+<p>At the moment, the system isn’t powerful enough to capture some more complex algorithms, so there’s an
+escape hatch. But, the eventual goal is to get rid of it.</p>
+<h2 id="lets-dive-in"><a class="header" href="#lets-dive-in">Let’s dive in!</a></h2>
+<p>Par is a language in active development. It’s not production-ready — but it’s expressive, and ready to be
+explored.</p>
+<p>If you’re curious about what programming can look like when guided by logic — <strong>turn the page.</strong></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+                            <a rel="next prefetch" href="getting_started.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+                    <a rel="next prefetch" href="getting_started.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

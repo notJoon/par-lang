@@ -1,0 +1,257 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Nondeterminism, Servers &amp; Clients - Par Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the Par programming language">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Par Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/nondeterminism/README.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="nondeterminism-servers--clients"><a class="header" href="#nondeterminism-servers--clients">Nondeterminism, Servers &amp; Clients</a></h1>
+<p>In an <a href="https://www.typetheoryforall.com/episodes/goal-of-science">episode of the “Type Theory Forall” podcast</a>, Phil Wadler said:</p>
+<blockquote>
+<p><strong>❝Linear logic is good for the bits of concurrency where you don’t need concurrency.❞</strong></p>
+<p>— Phil Wadler, 2025</p>
+</blockquote>
+<p>Thanks Phil, that’s very encouraging.</p>
+<p>What Phil — the wonderful researcher and author of the <a href="https://homepages.inf.ed.ac.uk/wadler/papers/propositions-as-sessions/propositions-as-sessions.pdf">process language Par is based on</a> — is talking about here is nondeterminism and races. Indeed, linear logic and races are like water and oil. The research has been largely unsatisfying, yielding steps in certain directions, but never quite far enough to solve real-world problems in an elegant and obviously correct manner.</p>
+<p><strong>Par offers an innovative solution!</strong></p>
+<h2 id="what-is-nondeterminism"><a class="header" href="#what-is-nondeterminism">What is nondeterminism?</a></h2>
+<p>All features of Par that we’ve covered so far are deterministic. Yes, Par is an automatically concurrent language. Independent bits of your program proceed concurrently, without you needing to lift a finger to make it happen. But when it comes to each single piece, the next instruction clearly says who to talk to, and what to say. Decisions are being made, but they only depend on the inputs. If the inputs have the same values, the outcomes will be the same.</p>
+<p>But sometimes, quite often in fact, decisions need to be made based on <em>who speaks first.</em> That’s the race, to speak first. A program gathering information from multiple slow sources can’t say <em>“I’ll first listen to A, then to B.”</em> If <em>A</em> takes 30 minutes to produce its first message, while <em>B</em> has already produced 50 of them, the program just won’t work well.</p>
+<p><strong>That’s nondeterminism.</strong> It’s not determined if I’ll speak to <em>A</em> or <em>B</em> first, it depends! In this case, it depends on <strong>timing.</strong></p>
+<blockquote>
+<p>We’re not talking about randomness, or “nondeterministic choice” here. While those fall under the general umbrella of nondeterminism, the randomness can be understood as a part of the program input. The nondeterminism we are interested in here is concerned with timing.</p>
+</blockquote>
+<p><strong>The problem-space of nondeterminism</strong> is quite large, but it mainly comes in <strong>two kinds:</strong></p>
+<ul>
+<li><strong>Bidirectional communication</strong> — That’s when <em>A</em> and <em>B</em> have a channel <em>between</em> them, but either of them can speak first. If <em>A</em> speaks first, <em>B</em> must react, and vice versa. This is useful for preemptive cancellation, implementing chat servers or real-time dashboards without periodic pings, and so on.</li>
+<li><strong>Server and clients</strong> — I don’t mean web servers. What I mean is structuring your program as multiple independent agents — clients — that communicate with a central, stateful agent: the server. The server pays attention to one client at a time, but always the one who speaks first.</li>
+</ul>
+<blockquote>
+<p>Par does not solve the first, yet. You can have cancellation, but it has to be cooperative, you can write a chat server, but there’s got to be periodic checks.</p>
+</blockquote>
+<p><strong>Par solves the second: server and clients,</strong> while:</p>
+<ul>
+<li>Keeping all the guarantees: <strong>no deadlocks, no runtime crashes, no infinite loops.</strong></li>
+<li>Leveraging Par’s types as <strong>session types to allow arbitrary communication protocols</strong> between the server and the clients.</li>
+<li><strong>Being very simple to understand and reason about!</strong></li>
+</ul>
+<blockquote>
+<p>👉 Just to make sure it’s clear… we’re <strong>not</strong> talking about web servers here. We’re talking about a concurrent structure, where any number of <em>client</em> agents are communicating with a central <em>server</em> agent, all inside a single program.</p>
+</blockquote>
+<h2 id="the-state-of-the-research"><a class="header" href="#the-state-of-the-research">The state of the research</a></h2>
+<p>When it comes to linear logic — the theory underlying Par — the problem of races is, to my best knowledge, unsolved in research. Here are some papers that shaped my understanding of the problem, and also why they fall short:</p>
+<ul>
+<li><a href="https://dl.acm.org/doi/abs/10.1145/3473567"><strong><em>Client-server sessions in linear logic</em></strong></a> — This paper is spectacularly elegant. It invents coexponentials, which partially solve the client-server communication topology. Unfortunately, the clients are not resumable.</li>
+<li><a href="https://cs.au.dk/~birke/phd-students/QianZ-thesis.pdf"><strong><em>Concurrency and races in classical linear logic</em></strong></a> — This is a follow-up paper, which tries to solve the non-resumability of the clients by introducing single input, single output interfaces for clients to communicate with a central server. Unfortunately, it’s not as elegant, and still not expressive enough.</li>
+<li><a href="https://library.oapen.org/bitstream/handle/20.500.12657/63011/1/978-3-031-30044-8.pdf#page=434"><strong><em>Safe session-based concurrency with shared linear state</em></strong></a> — This one is fairly simple, yet surprisingly potent. It introduces a deadlock-safe mutex type, that can be used to safely share a linear resource among independent processes. Unfortunately, it does not extend well to more involved communication protocols.</li>
+<li><a href="https://lmcs.episciences.org/6979/pdf"><strong><em>Towards races in linear logic</em></strong></a> — An extremely elegant approach presented with colorful formulas and icons. It fits very well into linear logic, but unfortunately is restricted to servers with a constant number of clients, which finds few use-cases.</li>
+</ul>
+<p><strong>Par’s solution here,</strong> its <code>poll</code>/<code>submit</code> control structure, can be used to implement everything from the first 3 papers above, and a lot more, with very few ingredients.</p>
+<p>The last paper is able to express some invariants that <code>poll</code>/<code>submit</code> cannot (the constant number of clients), but it’s questionable how useful those could be in real-world programs.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../quality_of_life/pipes.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../nondeterminism/poll_submit.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../quality_of_life/pipes.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../nondeterminism/poll_submit.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
