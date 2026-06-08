@@ -210,7 +210,7 @@ mod tests {
 
         assert_eq!(
             actual,
-            "choice {.delete => @__test__/Main.Map<String, Int>,.put => [Int] @__test__/Main.Map<String, Int>,}"
+            "choice {.delete => @__test__/Main.Map<String, Int>,.put(Int) => @__test__/Main.Map<String, Int>,}"
         );
     }
 
@@ -228,7 +228,7 @@ mod tests {
             "\
 choice {
   .delete => @__test__/Main.Map<String, Int>,
-  .put => [Int] @__test__/Main.Map<String, Int>,
+  .put(Int) => @__test__/Main.Map<String, Int>,
 }"
         );
     }
