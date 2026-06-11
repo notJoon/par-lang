@@ -5,6 +5,12 @@
 // transactions are independent linear leases. `.split` creates another linear
 // pool handle; `.close` drops only this handle and never waits for siblings or
 // outstanding leases.
+//
+// Temporal values travel as text. The portable driver does not decode
+// dedicated temporal column types, so on PostgreSQL and MySQL, cast temporal
+// columns to text when reading (e.g. `at::text`) and cast text parameters
+// when writing (e.g. `$1::timestamptz`); SQLite stores temporals as text
+// natively.
 export module Sql
 
 import {
@@ -118,33 +124,49 @@ export {
   // wrap the result in `.some`. Missing columns still error.
   dec Nullable : <a>[Format<a>] Format<Option<a>>
 
-  // Required scalar formats. The formats are checks, not coercions, with one
-  // pragmatic exception: `AsBool` also accepts `.int 0` and `.int 1`, because
-  // SQLite and MySQL surface stored booleans as integers.
+  // Required boolean format. A check, not a coercion, with one pragmatic
+  // exception: `.int 0` and `.int 1` are accepted as booleans, because SQLite
+  // and MySQL surface stored booleans as integers.
   dec AsBool  : Format<Bool>
+
+  // Required integer format; accepts exactly `.int` values.
   dec AsInt   : Format<Int>
+
+  // Required floating-point format; accepts exactly `.float` values.
   dec AsFloat : Format<Float>
+
+  // Required text format; accepts exactly `.text` values.
   dec AsText  : Format<String>
+
+  // Required byte-sequence format; accepts exactly `.bytes` values.
   dec AsBytes : Format<Bytes>
 
-  // Required temporal formats. Temporal values travel as text: SQLite stores
-  // them as text natively, while PostgreSQL and MySQL temporal columns must be
-  // cast to text in SQL (e.g. `at::text`), because the portable driver does
-  // not decode dedicated temporal column types.
-  //
-  // `AsTimestamp` reads zone-aware text: RFC 3339, with `T` or a space as the
-  // separator, and `Z` or any numeric offset. `AsDateTime` reads zone-free
-  // civil text (`T` or space separator, optional fractional seconds) and
-  // `AsDate` reads `YYYY-MM-DD` dates, both interpreted in the given zone.
+  // Required timestamp format: parses zone-aware text into an instant.
+  // Accepts RFC 3339, with `T` or a space as the separator, and `Z` or any
+  // numeric offset — this covers PostgreSQL's `timestamptz::text` output.
   dec AsTimestamp : Format<Time.Instant>
+
+  // Required date-time format: parses zone-free civil text (`T` or space
+  // separator, optional fractional seconds), interpreted in the given zone.
+  // Covers text written by SQL itself, such as SQLite's `datetime('now')`.
   dec AsDateTime  : [Time.Zone] Format<Time.Zoned>
+
+  // Required date format: parses `YYYY-MM-DD` text, interpreted in the given
+  // zone.
   dec AsDate      : [Time.Zone] Format<Time.Zoned>
 
-  // Parameter builders for temporal values. They intentionally produce text
-  // `Value`s, relying on the SQL statement/context to cast them if the backend
-  // needs a concrete temporal type.
+  // Renders an instant as RFC 3339 text, as a `.text` parameter; cast in SQL
+  // (e.g. `$1::timestamptz`) when the backend needs a concrete temporal type.
   dec Timestamp : [Time.Instant] Value
+
+  // Renders a zoned date-time as zone-free ISO date-time text, e.g.
+  // `2024-07-01T12:34:56`, as a `.text` parameter; sub-second precision is
+  // dropped. Cast in SQL when the backend needs a concrete temporal type.
   dec DateTime  : [Time.Zoned] Value
+
+  // Renders a zoned date-time as ISO date text, e.g. `2024-07-01`, as a
+  // `.text` parameter. Cast in SQL when the backend needs a concrete temporal
+  // type.
   dec Date      : [Time.Zoned] Value
 }
 
