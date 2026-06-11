@@ -245,9 +245,9 @@ def AsTimestamp = box case {
 // matches an optional fractional-second part.
 def AsDateTime = [zone] box case {
   .parse(value) => value.case {
-    .text s => Time.Parse(zone)("%Y-%m-%dT%H:%M:%S%.f", s).case {
+    .text s => s->Time.Parse("%Y-%m-%dT%H:%M:%S%.f", zone).case {
       .some zoned => .ok zoned,
-      .none! => Time.Parse(zone)("%Y-%m-%d %H:%M:%S%.f", s).case {
+      .none! => s->Time.Parse("%Y-%m-%d %H:%M:%S%.f", zone).case {
         .some zoned => .ok zoned,
         .none! => .err `invalid date-time text: ${s}`,
       },
@@ -259,7 +259,7 @@ def AsDateTime = [zone] box case {
 
 def AsDate = [zone] box case {
   .parse(value) => value.case {
-    .text s => Time.Parse(zone)("%Y-%m-%d", s).case {
+    .text s => s->Time.Parse("%Y-%m-%d", zone).case {
       .some zoned => .ok zoned,
       .none! => .err `invalid date text: ${s}`,
     },

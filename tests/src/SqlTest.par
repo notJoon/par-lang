@@ -358,7 +358,7 @@ def TestCivilRoundTrip: [Test] ! = [test] chan done {
   let try db = Sql.Open("sqlite::memory:")
   catch@db e => { db.close; throw e }
 
-  let zoned = Time.At(Time.UTC)(2024, 7, 1)(12, 34, 56).case {
+  let zoned = Time.At(Time.UTC, 2024, 7, 1, 12, 34, 56).case {
     .some z => z,
     .none! => Time.InZone(Time.Epoch, Time.UTC),
   }

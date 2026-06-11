@@ -410,9 +410,9 @@ async fn time_at(mut handle: Handle) {
 }
 
 async fn time_parse(mut handle: Handle) {
-    let zone = handle.receive();
-    let layout = handle.receive().string().await;
     let text = handle.receive().string().await;
+    let layout = handle.receive().string().await;
+    let zone = handle.receive();
     match DateTime::strptime(layout.as_str(), text.as_str()) {
         Ok(datetime) => zoned_from_civil(handle, zone, datetime).await,
         Err(_) => {
