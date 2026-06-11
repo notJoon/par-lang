@@ -4,7 +4,9 @@ use crate::language_server::feedback::{FeedbackBookKeeper, diagnostic_for_error}
 use crate::language_server::instance::Instance;
 use lsp_server::{Connection, ErrorCode};
 use lsp_types::notification::DidSaveTextDocument;
-use lsp_types::request::{DocumentSymbolRequest, ExecuteCommand, GotoDeclaration, GotoDefinition};
+use lsp_types::request::{
+    CodeLensRequest, DocumentSymbolRequest, ExecuteCommand, GotoDeclaration, GotoDefinition,
+};
 use lsp_types::{self as lsp, InitializeParams, Uri};
 use par_builtin::get_builtin_source;
 use std::collections::HashMap;
@@ -68,6 +70,12 @@ impl<'c> LanguageServer<'c> {
                 let params = extract_request::<DocumentSymbolRequest>(request);
                 self.handle_request_instance(request_id, &params.text_document.uri, |instance| {
                     instance.provide_document_symbols(&params)
+                })
+            }
+            CodeLensRequest::METHOD => {
+                let params = extract_request::<CodeLensRequest>(request);
+                self.handle_request_instance(request_id, &params.text_document.uri, |instance| {
+                    instance.provide_code_lenses(&params)
                 })
             }
             GotoDeclaration::METHOD => {
@@ -256,6 +264,9 @@ fn initialize_lsp(connection: &Connection) -> InitializeParams {
         )),
         hover_provider: Some(lsp::HoverProviderCapability::Simple(true)),
         document_symbol_provider: Some(lsp::OneOf::Left(true)),
+        code_lens_provider: Some(lsp::CodeLensOptions {
+            resolve_provider: Some(false),
+        }),
         declaration_provider: Some(lsp::DeclarationCapability::Simple(true)),
         definition_provider: Some(lsp::OneOf::Left(true)),
         execute_command_provider: Some(lsp::ExecuteCommandOptions {
