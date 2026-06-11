@@ -170,7 +170,6 @@ const CORE_SOURCE_FILES: &[BuiltinSourceFile] = &[
     },
 ];
 
-#[cfg(not(target_family = "wasm"))]
 const BASIC_SOURCE_FILES: &[BuiltinSourceFile] = &[
     BuiltinSourceFile {
         relative_path_from_src: "Console.par",
