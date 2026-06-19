@@ -245,12 +245,20 @@ impl Instance {
                 .definitions
                 .iter()
                 .filter_map(|(name, (definition, typ))| {
-                    if definition.span.file() != Some(self.file.clone()) || !matches!(typ, Type::Break(_)) {
+                    if definition.span.file() != Some(self.file.clone()) {
                         return None;
                     }
 
                     let module_path =
                         root_module_slash_path(checked.workspace().root_package(), &name.module)?;
+                    let (title, command) =
+                        if name.primary.starts_with("Test") && name.primary != "Test" {
+                            ("Run Test", "par.runTestCli")
+                        } else if matches!(typ, Type::Break(_)) {
+                            ("Run", "par.runDefinitionCli")
+                        } else {
+                            return None;
+                        };
                     let (start, _) = definition.span.points()?;
                     Some(lsp::CodeLens {
                         range: lsp::Range {
@@ -258,8 +266,8 @@ impl Instance {
                             end: start.to_lsp_position(),
                         },
                         command: Some(lsp::Command {
-                            title: "Run".to_string(),
-                            command: "par.runDefinitionCli".to_string(),
+                            title: title.to_string(),
+                            command: command.to_string(),
                             arguments: Some(vec![
                                 serde_json::Value::String(self.uri.to_string()),
                                 serde_json::Value::String(format!(
