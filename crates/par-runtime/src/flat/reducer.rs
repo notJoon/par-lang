@@ -34,6 +34,7 @@ impl Clone for NetHandle {
 
 pub(crate) struct Reducer {
     pub runtime: Runtime,
+    measure_net_duration: bool,
     spawner: Arc<dyn Spawn + Send + Sync>,
     inbox: mpsc::UnboundedReceiver<ReducerMessage>,
     sender: mpsc::WeakUnboundedSender<ReducerMessage>,
@@ -44,12 +45,14 @@ impl Reducer {
     pub(crate) fn from(
         runtime: Runtime,
         spawner: Arc<dyn Spawn + Send + Sync + 'static>,
+        measure_net_duration: bool,
     ) -> (Self, NetHandle) {
         let (tx, rx) = mpsc::unbounded_channel();
         let num_handles = Arc::new(AtomicUsize::new(0));
         (
             Self {
                 runtime,
+                measure_net_duration,
                 spawner,
                 inbox: rx,
                 sender: tx.downgrade(),
@@ -111,8 +114,18 @@ impl Reducer {
             loop {
                 if !self.runtime.redexes.is_empty() {
                     #[cfg(not(target_family = "wasm"))]
-                    let start = Instant::now();
-                    if let Some((a, b)) = self.runtime.reduce() {
+                    let reduction = if self.measure_net_duration {
+                        let start = Instant::now();
+                        let reduction = self.runtime.reduce();
+                        self.runtime.rewrites.net_duration += start.elapsed();
+                        reduction
+                    } else {
+                        self.runtime.reduce()
+                    };
+                    #[cfg(target_family = "wasm")]
+                    let reduction = self.runtime.reduce();
+
+                    if let Some((a, b)) = reduction {
                         match (a, b) {
                             (UserData::ExternalFn(f), other) => {
                                 let handle = Handle::from_node(
@@ -131,10 +144,6 @@ impl Reducer {
                                 self.spawner.spawn((f.0).as_ref()(handle.into())).unwrap();
                             }
                         }
-                    }
-                    #[cfg(not(target_family = "wasm"))]
-                    {
-                        self.runtime.rewrites.net_duration += start.elapsed();
                     }
                 } else {
                     match self.inbox.try_recv() {

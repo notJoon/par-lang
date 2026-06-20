@@ -719,7 +719,12 @@ fn run_definition(
 
         let start = Instant::now();
         let package_to_run = rt_compiled.code.get_with_name(name).unwrap();
-        let (root, reducer_future) = par_runtime::start_and_instantiate(
+        let start_runtime = if print_stats {
+            par_runtime::start_and_instantiate_with_stats
+        } else {
+            par_runtime::start_and_instantiate
+        };
+        let (root, reducer_future) = start_runtime(
             Arc::new(TokioSpawn::new()),
             rt_compiled.code.arena.clone(),
             package_to_run,
@@ -761,7 +766,12 @@ fn run_definition_vm(binary_path: PathBuf, target: Option<String>, print_stats: 
             .definition_to_package
             .get(&target)
             .expect(format!("Definition {target} not found").as_str());
-        let (root, reducer_future) = par_runtime::start_and_instantiate(
+        let start_runtime = if print_stats {
+            par_runtime::start_and_instantiate_with_stats
+        } else {
+            par_runtime::start_and_instantiate
+        };
+        let (root, reducer_future) = start_runtime(
             Arc::new(TokioSpawn::new()),
             artifact.arena.clone(),
             package_to_run.clone(),
