@@ -710,46 +710,6 @@ impl Runtime {
                     NodeRef::Global(instance, index, _) => Node::Global(instance, index),
                 }
             }
-            fn as_external_fn(&self) -> Option<ExternalFn> {
-                match self {
-                    NodeRef::Linear(Linear::Value(val)) => match val.as_ref() {
-                        Value::ExternalFn(ext) => Some(ext.clone()),
-                        _ => None,
-                    },
-                    NodeRef::Global(_, _, Global::Value(Value::ExternalFn(ext))) => {
-                        Some(ext.clone())
-                    }
-                    NodeRef::Shared(Shared::Sync(shared))
-                        if matches!(shared.as_ref(), SyncShared::Value(Value::ExternalFn(_))) =>
-                    {
-                        let SyncShared::Value(Value::ExternalFn(ext)) = shared.as_ref() else {
-                            unreachable!()
-                        };
-                        Some(ext.clone())
-                    }
-                    _ => None,
-                }
-            }
-            fn as_external_arc(&self) -> Option<ExternalArc> {
-                match self {
-                    NodeRef::Linear(Linear::Value(val)) => match val.as_ref() {
-                        Value::ExternalArc(ext) => Some(ext.clone()),
-                        _ => None,
-                    },
-                    NodeRef::Global(_, _, Global::Value(Value::ExternalArc(ext))) => {
-                        Some(ext.clone())
-                    }
-                    NodeRef::Shared(Shared::Sync(shared))
-                        if matches!(shared.as_ref(), SyncShared::Value(Value::ExternalArc(_))) =>
-                    {
-                        let SyncShared::Value(Value::ExternalArc(ext)) = shared.as_ref() else {
-                            unreachable!()
-                        };
-                        Some(ext.clone())
-                    }
-                    _ => None,
-                }
-            }
         }
         let a_ref = NodeRef::from_node(&self.arena, a);
         let b_ref = NodeRef::from_node(&self.arena, b);
@@ -872,19 +832,55 @@ impl Runtime {
                 );
             }
 
-            sym!(node, other) if node.as_external_fn().is_some() => {
-                let Some(ext) = node.as_external_fn() else {
+            sym!(NodeRef::Linear(Linear::Value(value)), other)
+                if matches!(value.as_ref(), Value::ExternalFn(_)) =>
+            {
+                let Value::ExternalFn(ext) = *value else {
                     unreachable!()
                 };
                 self.rewrites.ext_call += 1;
                 return Some((UserData::ExternalFn(ext), other.into_node()));
             }
-            sym!(node, other) if node.as_external_arc().is_some() => {
-                let Some(ext) = node.as_external_arc() else {
+            sym!(
+                NodeRef::Global(_, _, Global::Value(Value::ExternalFn(ext))),
+                other
+            ) => {
+                self.rewrites.ext_call += 1;
+                return Some((UserData::ExternalFn(*ext), other.into_node()));
+            }
+            sym!(NodeRef::Shared(Shared::Sync(shared)), other)
+                if matches!(shared.as_ref(), SyncShared::Value(Value::ExternalFn(_))) =>
+            {
+                let SyncShared::Value(Value::ExternalFn(ext)) = shared.as_ref() else {
+                    unreachable!()
+                };
+                self.rewrites.ext_call += 1;
+                return Some((UserData::ExternalFn(*ext), other.into_node()));
+            }
+            sym!(NodeRef::Linear(Linear::Value(value)), other)
+                if matches!(value.as_ref(), Value::ExternalArc(_)) =>
+            {
+                let Value::ExternalArc(ext) = *value else {
                     unreachable!()
                 };
                 self.rewrites.ext_call += 1;
                 return Some((UserData::ExternalArc(ext), other.into_node()));
+            }
+            sym!(
+                NodeRef::Global(_, _, Global::Value(Value::ExternalArc(ext))),
+                other
+            ) => {
+                self.rewrites.ext_call += 1;
+                return Some((UserData::ExternalArc(ext.clone()), other.into_node()));
+            }
+            sym!(NodeRef::Shared(Shared::Sync(shared)), other)
+                if matches!(shared.as_ref(), SyncShared::Value(Value::ExternalArc(_))) =>
+            {
+                let SyncShared::Value(Value::ExternalArc(ext)) = shared.as_ref() else {
+                    unreachable!()
+                };
+                self.rewrites.ext_call += 1;
+                return Some((UserData::ExternalArc(ext.clone()), other.into_node()));
             }
             sym!(
                 NodeRef::Global(instance, _, Global::Destruct(destructor)),
