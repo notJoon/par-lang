@@ -2,6 +2,7 @@ use super::readback::Handle;
 use crate::flat::runtime::{Node, Runtime, UserData};
 use crate::linker::Linked;
 use futures::future::RemoteHandle;
+use futures::stream::{FuturesUnordered, StreamExt};
 use futures::task::{FutureObj, Spawn, SpawnExt};
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
@@ -39,6 +40,9 @@ pub(crate) struct Reducer {
     inbox: mpsc::UnboundedReceiver<ReducerMessage>,
     sender: mpsc::WeakUnboundedSender<ReducerMessage>,
     num_handles: Arc<AtomicUsize>,
+    // External calls remain independent futures, but are cooperatively polled
+    // by the reducer instead of allocating a Tokio task for every call.
+    external_tasks: FuturesUnordered<super::runtime::ExternalFnRet>,
 }
 
 impl Reducer {
@@ -57,6 +61,7 @@ impl Reducer {
                 inbox: rx,
                 sender: tx.downgrade(),
                 num_handles: num_handles.clone(),
+                external_tasks: FuturesUnordered::new(),
             },
             NetHandle(tx, 0, num_handles),
         )
@@ -110,6 +115,7 @@ impl Reducer {
         }
     }
     pub(crate) async fn run(&mut self) {
+        let mut inbox_closed = false;
         loop {
             loop {
                 if !self.runtime.redexes.is_empty() {
@@ -133,7 +139,7 @@ impl Reducer {
                                     self.net_handle().await,
                                     other,
                                 );
-                                self.spawner.spawn(f(handle.into())).unwrap();
+                                self.external_tasks.push(f(handle.into()));
                             }
                             (UserData::ExternalArc(f), other) => {
                                 let handle = Handle::from_node(
@@ -141,7 +147,7 @@ impl Reducer {
                                     self.net_handle().await,
                                     other,
                                 );
-                                self.spawner.spawn((f.0).as_ref()(handle.into())).unwrap();
+                                self.external_tasks.push((f.0).as_ref()(handle.into()));
                             }
                         }
                     }
@@ -156,12 +162,30 @@ impl Reducer {
                     }
                 }
             }
-            match self.inbox.recv().await {
-                Some(msg) => {
-                    self.handle_message(msg);
-                }
-                _ => {
+            if self.external_tasks.is_empty() {
+                if inbox_closed {
                     break;
+                }
+                match self.inbox.recv().await {
+                    Some(msg) => {
+                        self.handle_message(msg);
+                    }
+                    None => {
+                        inbox_closed = true;
+                    }
+                }
+            } else if inbox_closed {
+                self.external_tasks.next().await;
+            } else {
+                tokio::select! {
+                    msg = self.inbox.recv() => {
+                        if let Some(msg) = msg {
+                            self.handle_message(msg);
+                        } else {
+                            inbox_closed = true;
+                        }
+                    }
+                    _ = self.external_tasks.next() => {}
                 }
             }
         }
