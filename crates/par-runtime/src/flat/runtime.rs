@@ -152,6 +152,23 @@ pub struct PackageBody<Ext: Clone> {
     pub redexes: Index<Ext, [(Index<Ext, Global<Ext>>, Index<Ext, Global<Ext>>)]>,
 }
 
+#[derive(Clone, Copy)]
+pub(crate) struct LinkedPackageBody {
+    root: GlobalPtr<Linked>,
+    captures: GlobalPtr<Linked>,
+    redexes: Index<Linked, [(GlobalPtr<Linked>, GlobalPtr<Linked>)]>,
+}
+
+impl From<&PackageBody<Linked>> for LinkedPackageBody {
+    fn from(body: &PackageBody<Linked>) -> Self {
+        Self {
+            root: body.root,
+            captures: body.captures,
+            redexes: body.redexes,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// A package is a `Global` subgraph that is isolated from the rest of the program
 /// It does not use the same Instance as its environment, and so it requires a
@@ -415,10 +432,10 @@ pub(crate) trait Linker {
         }
     }
 
-    fn instatiate_package_body(
+    fn instatiate_linked_package_body(
         &mut self,
         instance: Instance,
-        body: &PackageBody<Linked>,
+        body: LinkedPackageBody,
     ) -> (Node<Linked>, Node<Linked>) {
         self.arena().get(body.redexes).iter().for_each(|(a, b)| {
             self.link(
@@ -454,7 +471,15 @@ pub(crate) trait Linker {
         package: &PackageBody<Linked>,
         captures: Node<Linked>,
     ) -> Node<Linked> {
-        let (root, captures_in) = self.instatiate_package_body(instance, package);
+        self.instantiate_linked_package_body_captures(instance, package.into(), captures)
+    }
+    fn instantiate_linked_package_body_captures(
+        &mut self,
+        instance: Instance,
+        package: LinkedPackageBody,
+        captures: Node<Linked>,
+    ) -> Node<Linked> {
+        let (root, captures_in) = self.instatiate_linked_package_body(instance, package);
         self.link(captures_in, captures);
         root
     }
@@ -670,15 +695,15 @@ impl Runtime {
         self.link(root, other);
     }
     fn lookup_case_branch(
-        &mut self,
+        &self,
         options: Index<Linked, [(Str<Linked>, PackageBody<Linked>)]>,
         variant: Str<Linked>,
-    ) -> Option<PackageBody<Linked>> {
+    ) -> Option<LinkedPackageBody> {
         self.arena
             .get(options)
             .iter()
             .find(|(a, _)| a.clone() == variant)
-            .map(|(_, b)| b.clone())
+            .map(|(_, b)| b.into())
     }
     /// Carry out an interaction between two nodes.
     /// Returns Some if an external operation with `UserData` was attempted.
@@ -932,18 +957,18 @@ impl Runtime {
                         if let Some(package) =
                             self.lookup_case_branch(options.clone(), signal.clone())
                         {
-                            let root = self.instantiate_package_body_captures(
+                            let root = self.instantiate_linked_package_body_captures(
                                 instance.clone(),
-                                &package,
+                                package,
                                 Node::Global(instance, context),
                             );
                             self.link(payload, root);
                         } else {
                             let branch =
                                 self.lookup_case_branch(options, self.arena.empty_string());
-                            let root = self.instantiate_package_body_captures(
+                            let root = self.instantiate_linked_package_body_captures(
                                 instance.clone(),
-                                &branch.unwrap(),
+                                branch.unwrap(),
                                 Node::Global(instance, context),
                             );
                             // TODO: Optimize this; we're reconstructing the `Either` branch.
