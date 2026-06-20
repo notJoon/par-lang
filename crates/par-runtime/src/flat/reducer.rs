@@ -4,8 +4,10 @@ use crate::linker::Linked;
 use futures::future::RemoteHandle;
 use futures::stream::{FuturesUnordered, StreamExt};
 use futures::task::{FutureObj, Spawn, SpawnExt};
+use std::future::poll_fn;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
+use std::task::Poll;
 use std::time::Instant;
 use tokio::sync::mpsc;
 
@@ -114,6 +116,13 @@ impl Reducer {
             ReducerMessage::Created(_) => {}
         }
     }
+    async fn schedule_external(&mut self, mut task: super::runtime::ExternalFnRet) {
+        let pending =
+            poll_fn(|context| Poll::Ready(task.as_mut().poll(context).is_pending())).await;
+        if pending {
+            self.external_tasks.push(task);
+        }
+    }
     pub(crate) async fn run(&mut self) {
         let mut inbox_closed = false;
         loop {
@@ -139,7 +148,7 @@ impl Reducer {
                                     self.net_handle().await,
                                     other,
                                 );
-                                self.external_tasks.push(f(handle.into()));
+                                self.schedule_external(f(handle.into())).await;
                             }
                             (UserData::ExternalArc(f), other) => {
                                 let handle = Handle::from_node(
@@ -147,7 +156,7 @@ impl Reducer {
                                     self.net_handle().await,
                                     other,
                                 );
-                                self.external_tasks.push((f.0).as_ref()(handle.into()));
+                                self.schedule_external((f.0).as_ref()(handle.into())).await;
                             }
                         }
                     }
