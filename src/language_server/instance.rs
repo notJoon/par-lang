@@ -1,13 +1,13 @@
 use super::io::IO;
 use crate::language_server::data::ToLspPosition;
-use crate::package_utils::SourceLookup;
+use crate::package_utils::{SourceLookup, root_module_slash_path};
 use crate::workspace_support::{
     ScopedTypeError, WorkspaceBuildError, checked_workspace_from_path,
     checked_workspace_from_single_file,
 };
 use indexmap::IndexMap;
 use lsp_types::{self as lsp, Uri};
-use par_core::frontend::language::GlobalName;
+use par_core::frontend::{Type, language::GlobalName};
 use par_core::source::{FileName, Span};
 use par_core::workspace::{
     CheckedWorkspace, SourceOverrides, WorkspaceDiscoveryError, WorkspaceError,
@@ -231,6 +231,58 @@ impl Instance {
             symbols.into_values().collect(),
         ))
     }
+
+    pub fn provide_code_lenses(&self, params: &lsp::CodeLensParams) -> Option<Vec<lsp::CodeLens>> {
+        tracing::debug!("Handling code lens request with params: {:?}", params);
+
+        let Some(checked) = self.checked.as_ref() else {
+            return None;
+        };
+
+        Some(
+            checked
+                .checked_module()
+                .definitions
+                .iter()
+                .filter_map(|(name, (definition, typ))| {
+                    if definition.span.file() != Some(self.file.clone()) {
+                        return None;
+                    }
+
+                    let module_path =
+                        root_module_slash_path(checked.workspace().root_package(), &name.module)?;
+                    let (title, command) =
+                        if name.primary.starts_with("Test") && name.primary != "Test" {
+                            ("Run Test", "par.runTestCli")
+                        } else if matches!(typ, Type::Break(_)) {
+                            ("Run", "par.runDefinitionCli")
+                        } else {
+                            return None;
+                        };
+                    let (start, _) = definition.span.points()?;
+                    Some(lsp::CodeLens {
+                        range: lsp::Range {
+                            start: start.to_lsp_position(),
+                            end: start.to_lsp_position(),
+                        },
+                        command: Some(lsp::Command {
+                            title: title.to_string(),
+                            command: command.to_string(),
+                            arguments: Some(vec![
+                                serde_json::Value::String(self.uri.to_string()),
+                                serde_json::Value::String(format!(
+                                    "{module_path}.{}",
+                                    name.primary
+                                )),
+                            ]),
+                        }),
+                        data: None,
+                    })
+                })
+                .collect(),
+        )
+    }
+
     pub fn handle_goto_declaration(
         &self,
         params: &lsp::GotoDefinitionParams,
