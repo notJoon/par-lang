@@ -128,10 +128,10 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/par-team/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/types/either.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/types/either.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -178,7 +178,7 @@ type StringOrNumber = either {
 }
 
 def Str: StringOrNumber = .string "Hello!"
-def Num: StringOrNumber = .number 42,
+def Num: StringOrNumber = .number 42
 </code></pre>
 <p>An either type is spelled with the keyword <code>either</code>, followed by curly braces enclosing a
 comma-separated list of variants.</p>
@@ -273,13 +273,13 @@ same type.</p>
 <pre><code class="language-par">// evaluates to "Hello!"
 def ResultForStr = Str.case {
   .string s =&gt; s,
-  .number n =&gt; Int.ToString(n),
+  .number n =&gt; `#{n}`,
 }
 
 // evaluates to "42"
 def ResultForNum = Num.case {
   .string s =&gt; s,
-  .number n =&gt; Int.ToString(n),
+  .number n =&gt; `#{n}`,
 }
 </code></pre>
 <p>For a comprehensive example, here’s a big <a href="./function.html">function</a> converting the above <code>Varied</code> type
@@ -290,24 +290,13 @@ def VariedToString = [varied] varied.case {
 
   .string s =&gt; String.Builder.add(".string ").add(String.Quote(s)).build,
 
-  .number n =&gt; String.Builder.add(".number ").add(Int.ToString(n)).build,
+  .number n =&gt; `.number #{n}`,
 
   .pair(n) s =&gt;
-    String.Builder
-      .add(".pair(")
-      .add(Int.ToString(n))
-      .add(") ")
-      .add(String.Quote(s))
-      .build,
+    `.pair(#{n}) ${String.Quote(s)}`,
 
   .symmetricPair(n, s)! =&gt;
-    String.Builder
-      .add(".symmetricPair(")
-      .add(Int.ToString(n))
-      .add(", ")
-      .add(String.Quote(s))
-      .add(")!")
-      .build,
+    `.symmetricPair(#{n}, ${String.Quote(s)})!`,
 
   .nested inside =&gt; String.Builder.add(".nested").add(inside.case {
     .left! =&gt; ".left!",

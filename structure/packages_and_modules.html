@@ -128,10 +128,10 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/par-team/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/structure/packages_and_modules.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/structure/packages_and_modules.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -227,7 +227,7 @@ referenced directly.</p>
 <h3 id="built-in-packages"><a class="header" href="#built-in-packages">Built-in packages</a></h3>
 <p>Every package automatically depends on two built-in packages:</p>
 <ul>
-<li><code>@core</code> for core types and data structures such as <code>String</code>, <code>List</code>, <code>Map</code>, <code>Result</code>, and so on.</li>
+<li><code>@core</code> for core types and data structures such as <code>String</code>, <code>List</code>, <code>Map</code>, <code>Try</code>, and so on.</li>
 <li><code>@basic</code> for simple I/O such as <code>Console</code>, <code>Os</code>, and <code>Http</code>.</li>
 </ul>
 <p>These are <strong>implicit dependencies,</strong> but <strong>not implicit imports.</strong> Their modules are available to import from,
@@ -306,13 +306,12 @@ import @dep2/bleh/Data as Data2
 <p>Once a module is imported, its exported items are accessed through the module name:</p>
 <pre><code class="language-par">import {
   @core/List
-  @core/Nat
   @core/String
   data/Post
 }
 
 dec RenderPosts : String
-def RenderPosts = Post.FetchAllFromDB(!)-&gt;List.Length-&gt;Nat.ToString
+def RenderPosts = `#{Post.FetchAllFromDB(!)-&gt;List.Length} posts`
 </code></pre>
 <p>In general, imported names are accessed as:</p>
 <pre><code class="language-par">Module.Name
@@ -455,7 +454,9 @@ definition.</li>
 <li><code>par run handlers/api/Posts</code> means <code>handlers/api/Posts.Main</code></li>
 <li><code>par run handlers/api/Posts.Program</code> means the <code>Program</code> definition in the <code>handlers/api/Posts</code> module</li>
 </ul>
-<p>The same path-based rules are used by other commands such as <code>par test</code>.</p>
+<p>Other commands such as <code>par test</code> and <code>par check</code> do not take definition targets like these; they
+work on whole packages. What they share with <code>par run</code> is the <code>--package</code> flag, which lets you point
+the command at a package path.</p>
 <p>That’s the package/module system. With that in place, we can now return to the language itself.</p>
 
                     </main>

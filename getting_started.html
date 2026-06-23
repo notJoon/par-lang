@@ -128,10 +128,10 @@
                         <a href="print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/par-team/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/getting_started.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/getting_started.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -175,9 +175,9 @@ we’ll need to install Rust and its build tool, called Cargo.</p>
 </blockquote>
 <h3 id="2-clone-pars-repository"><a class="header" href="#2-clone-pars-repository">2. Clone Par’s repository</a></h3>
 <p>The next step is to obtain Par’s source code. That is located on
-<a href="https://github.com/faiface/par-lang">GitHub</a>. Clone it locally by running the following
+<a href="https://github.com/par-team/par-lang">GitHub</a>. Clone it locally by running the following
 in your terminal:</p>
-<pre><code>$ git clone https://github.com/faiface/par-lang
+<pre><code>$ git clone https://github.com/par-team/par-lang
 </code></pre>
 <h3 id="3-build-and-install-pars-cli-tool"><a class="header" href="#3-build-and-install-pars-cli-tool">3. Build and install Par’s CLI tool</a></h3>
 <p>Navigate to the newly created directory:</p>
@@ -188,7 +188,12 @@ in your terminal:</p>
 </code></pre>
 <p>This may take a while as Rust downloads and builds all the dependencies.</p>
 <p>This installs the <code>par</code> command.</p>
-<h3 id="4-create-a-package"><a class="header" href="#4-create-a-package">4. Create a package</a></h3>
+<h3 id="4-install-the-visual-studio-code-extension"><a class="header" href="#4-install-the-visual-studio-code-extension">4. Install the Visual Studio Code extension</a></h3>
+<p>If you use Visual Studio Code, install the
+<a href="https://marketplace.visualstudio.com/items?itemName=par-lang.par-vscode">Par extension</a>.
+It gives you syntax highlighting and editor support while you follow along.</p>
+<p>This step is optional; the command-line tools work without it.</p>
+<h3 id="5-create-a-package"><a class="header" href="#5-create-a-package">5. Create a package</a></h3>
 <p>A new <code>par</code> command should now be available in your terminal. It may be necessary
 to restart the terminal for it to appear.</p>
 <p>Let’s create a fresh package:</p>
@@ -207,7 +212,7 @@ $ cd hello_par
 <p>And you can type-check the package without running it:</p>
 <pre><code>$ par check
 </code></pre>
-<h3 id="5-browse-the-docs"><a class="header" href="#5-browse-the-docs">5. Browse the docs</a></h3>
+<h3 id="6-browse-the-docs"><a class="header" href="#6-browse-the-docs">6. Browse the docs</a></h3>
 <p>Par comes with a built-in docs browser:</p>
 <pre><code>$ par doc
 </code></pre>
@@ -218,7 +223,7 @@ $ cd hello_par
 <li><strong>For a remote package,</strong> <code>par doc --remote github.com/faiface/par-cancellable</code> lets you inspect
 a package without manually adding it as a dependency.</li>
 </ul>
-<h3 id="6-open-the-playground"><a class="header" href="#6-open-the-playground">6. Open the playground</a></h3>
+<h3 id="7-open-the-playground"><a class="header" href="#7-open-the-playground">7. Open the playground</a></h3>
 <p>The playground is a great way to experiment with code and interact with values through the
 playground’s automatic UI:</p>
 <pre><code>$ par playground

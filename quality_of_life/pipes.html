@@ -128,10 +128,10 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/par-team/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/quality_of_life/pipes.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/quality_of_life/pipes.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -171,15 +171,15 @@ names.</p>
 
 import @core/Nat
 
-def Add    = [m: Nat, n: Nat] Nat.Add(m, n)
-def Double = [n: Nat] Nat.Add(n, n)
-def Square = [n: Nat] Nat.Mul(n, n)
+def Add    = [m: Nat, n: Nat] m + n
+def Double = [n: Nat] n + n
+def Square = [n: Nat] n * n
 </code></pre>
 <p>Without pipes you call them inside one another:</p>
-<pre><code class="language-par">let result = Square(Add(3, Double(4)))  // = 196
+<pre><code class="language-par">let result = Square(Add(3, Double(4)))  // = 121
 </code></pre>
 <p>With pipes you can say the same thing in the order you want to read it:</p>
-<pre><code class="language-par">let result = 3
+<pre><code class="language-par">let result = {3}
   -&gt; Add(Double(4))
   -&gt; Square
 </code></pre>
@@ -230,8 +230,8 @@ stack-&gt;Push(4)
 returns a head and a tail:</p>
 <pre><code class="language-par">dec Pop : [List&lt;Nat&gt;] (Option&lt;Nat&gt;) List&lt;Nat&gt;
 def Pop = [list] list.case {
-  .end! =&gt; (.err!) .end!,
-  .item(x) xs =&gt; (.ok x) xs,
+  .end! =&gt; (.none!) .end!,
+  .item(x) xs =&gt; (.some x) xs,
 }
 
 let numbers = *(10, 20, 30)

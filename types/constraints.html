@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Pair - Par Documentation</title>
+        <title>Type Constraints - Par Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -131,7 +131,7 @@
                         <a href="https://github.com/par-team/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/types/pair.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/types/constraints.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -160,97 +160,173 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="pair"><a class="header" href="#pair">Pair</a></h1>
-<p>A pair is two independent values packed into one. The only thing that differentiates pairs in Par,
-compared to other languages, is their sequential syntax. While unusual, it makes pairs applicable
-to a much wider set of use-cases.</p>
-<p>A pair type consists of two types, the first enclosed in round parentheses.</p>
+                        <h1 id="type-constraints"><a class="header" href="#type-constraints">Type Constraints</a></h1>
+<p>Generic code often needs to know a little bit about an unknown type.</p>
+<p>For example, this function can return its argument without knowing anything about <code>a</code>:</p>
+<pre><code class="language-par">dec Identity : &lt;a&gt;[a] a
+def Identity = &lt;a&gt;[x] x
+</code></pre>
+<p>But this one needs to use its value twice:</p>
+<pre><code class="language-par">dec Duplicate : &lt;a: box&gt;[a] (a, a)!
+def Duplicate = &lt;a: box&gt;[x] (x, x)!
+</code></pre>
+<p>The <code>: box</code> part is a <strong>type constraint</strong>. It says that the unknown type <code>a</code> must be non-linear,
+so values of that type may be reused or dropped.</p>
+<p>Par currently has four constraints:</p>
+<ul>
+<li><code>box</code></li>
+<li><code>data</code></li>
+<li><code>number</code></li>
+<li><code>signed</code></li>
+</ul>
+<p>They form a chain from broadest to narrowest:</p>
+<pre><code class="language-text">signed -&gt; number -&gt; data -&gt; box
+</code></pre>
+<p>So every <code>signed</code> type is also a <code>number</code>, every <code>number</code> is also <code>data</code>, and every <code>data</code> type is
+also <code>box</code>.</p>
+<h2 id="syntax"><a class="header" href="#syntax">Syntax</a></h2>
+<p>Constraints are written after type parameters with a colon.</p>
+<p>Explicit generic functions use <code>type</code> binders:</p>
+<pre><code class="language-par">dec ZeroOr : [type a: number, Bool, a] a
+</code></pre>
+<p>Implicit generic functions use angle-bracket binders:</p>
+<pre><code class="language-par">dec Sum : &lt;a: number&gt;[(a) a] a
+</code></pre>
+<p>Existential types can constrain the hidden type:</p>
+<pre><code class="language-par">type SomeData = (type a: data) a
+</code></pre>
+<p>Implicit generic pairs can do the same:</p>
+<pre><code class="language-par">type DataWithText = &lt;a: data&gt;(a) String
+</code></pre>
+<p>When you construct a value with a constrained explicit binder, the checked type must satisfy the
+same constraint:</p>
+<pre><code class="language-par">dec ShowTwice : [type a: data, a] String
+def ShowTwice = [type a: data, x] `#{x} #{x}`
+</code></pre>
+<p>Named type definitions are the one place where parameters are not constrained:</p>
+<pre><code class="language-par">type Boxed&lt;a&gt; = box a      // OK
+type Bad&lt;a: box&gt; = box a   // Error
+</code></pre>
+<p>If a type definition needs constrained behavior, put the constraint on the functions that operate
+on that type.</p>
+<h2 id="the-box-constraint"><a class="header" href="#the-box-constraint">The <code>box</code> Constraint</a></h2>
+<p>The <code>box</code> constraint means values are non-linear. A value whose type is known only as <code>a: box</code> may
+be copied, reused, or dropped.</p>
+<pre><code class="language-par">dec KeepFirst : &lt;a: box&gt;[(a, a)!] a
+def KeepFirst = &lt;a: box&gt;[(first, second)!] first
+</code></pre>
+<p>In the example, <code>second</code> is not used. That is allowed because <code>a: box</code>.</p>
+<p>Types that satisfy <code>box</code> include:</p>
+<ul>
+<li>primitives</li>
+<li><code>!</code></li>
+<li>pairs, eithers, and recursive types whose parts also satisfy <code>box</code></li>
+<li>explicit <code>box T</code></li>
+<li>type aliases that expand to a <code>box</code> type</li>
+<li>type variables with a <code>box</code>, <code>data</code>, <code>number</code>, or <code>signed</code> constraint</li>
+</ul>
+<p>Functions, choices, continuations, and unrestricted type variables do not satisfy <code>box</code> unless they
+are wrapped in an explicit <code>box</code>.</p>
+<h2 id="the-data-constraint"><a class="header" href="#the-data-constraint">The <code>data</code> Constraint</a></h2>
+<p>The <code>data</code> constraint means values are ordinary data. Data values are non-linear, and additionally
+support:</p>
+<ul>
+<li>comparison operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>==</code>, <code>!=</code></li>
+<li>data interpolation in template strings: <code>#{...}</code></li>
+</ul>
+<pre><code class="language-par">dec Min : &lt;a: data&gt;[(a) a] a
+def Min = &lt;a: data&gt;[(left) right] if {
+  left &lt;= right =&gt; left,
+  else =&gt; right,
+}
+
+dec Label : &lt;a: data&gt;[a] String
+def Label = &lt;a: data&gt;[value] `value = #{value}`
+</code></pre>
+<p>The comparison operators use <code>@core/Data.Compare</code> under the hood. The <code>#{...}</code> template form uses
+<code>@core/Data.ToString</code>.</p>
+<p>Types that satisfy <code>data</code> include:</p>
+<ul>
+<li>all primitive types</li>
+<li><code>!</code></li>
+<li>pairs whose elements are data</li>
+<li>eithers whose payloads are data</li>
+<li>recursive types whose bodies are data</li>
+<li>type aliases that expand to data</li>
+<li>type variables with a <code>data</code>, <code>number</code>, or <code>signed</code> constraint</li>
+</ul>
+<p>Adding <code>box</code> to a non-data type does not make it data:</p>
+<pre><code class="language-par">box [Int] Int  // box, but not data
+</code></pre>
+<p>If <code>T</code> is already data, then <code>box T</code> can still be used as data, because boxed data can be used as
+the data value inside.</p>
+<h2 id="the-number-constraint"><a class="header" href="#the-number-constraint">The <code>number</code> Constraint</a></h2>
+<p>The <code>number</code> constraint is for generic numeric code. A <code>number</code> type supports:</p>
+<ul>
+<li><code>+</code></li>
+<li><code>*</code></li>
+<li><code>/</code></li>
+<li><code>Number.Zero(type a)</code></li>
+</ul>
 <pre><code class="language-par">module Main
 
-import {
-  @core/Int
-  @core/String
-}
+import @core/Number
 
-type Pair = (String) Int
-</code></pre>
-<p>If the second type is another pair, we can use <em>syntax sugar</em> to write it more concisely:</p>
-<pre><code class="language-par">type Triple1 = (String) (Int) String
-type Triple2 = (String, Int) String
-// these two are exactly the same type
-</code></pre>
-<p>For a <strong>symmetric pair</strong> syntax, it’s idiomatic to use the <a href="./unit.html">unit</a> type as the last element.</p>
-<pre><code class="language-par">type SymmetricPair = (String, Int)!
-</code></pre>
-<p>Pairs in their sequential style are frequently used in combination with other types to insert values
-into bigger structures. The predefined <code>List&lt;a&gt;</code> type uses a pair for its <code>.item</code> variant:</p>
-<pre><code class="language-par">type List&lt;a&gt; = recursive either {
-  .end!,
-  .item(a) self,
-}
-</code></pre>
-<p>An infinite stream type may use a pair to produce an element together with the remainder of the stream:</p>
-<pre><code class="language-par">type Stream&lt;a&gt; = iterative choice {
-  .close =&gt; !,
-  .next  =&gt; (a) self,
-}
-</code></pre>
-<h2 id="construction"><a class="header" href="#construction">Construction</a></h2>
-<p>Pair values look the same as their types, with values instead of types in place of elements.</p>
-<pre><code class="language-par">def Example1: Pair    = ("Hello!") 42
-def Example2: Triple1 = ("Alice") (42) "Bob"
+dec SumPair : &lt;a: number&gt;[(a) a] a
+def SumPair = &lt;a: number&gt;[(left) right] left + right
 
-// `Triple1` and `Triple2` really are the same type
-def Example3: Triple1 = ("Alice", 42) "Bob"
-def Example3: Triple2 = ("Alice", 42) "Bob"
-
-// notice the `!` at the end
-def Example4: SymmetricPair = ("Hello!", 42)!
+dec Zero : [type a: number] a
+def Zero = [type a: number] Number.Zero(type a)
 </code></pre>
-<p>When embedded in other types, sequential pairs blend in seamlessly:</p>
-<pre><code class="language-par">def Names: List&lt;String&gt; = .item("Alice").item("Bob").item("Cyril").end!
-//                             |             |           |_____________
-//                             |             |_________________________
-//                             |_______________________________________
-</code></pre>
-<h2 id="destruction"><a class="header" href="#destruction">Destruction</a></h2>
-<p>Pairs are deconstructed in patterns on assignments. Those can appear in:</p>
+<p>The number types are:</p>
 <ul>
-<li><a href="../structure/let_expressions.html"><code>let</code>-expressions</a></li>
-<li><a href="./function.html">function</a> arguments</li>
-<li><a href="./choice.html"><code>case</code></a>/<a href="./either.html"><code>.case</code></a> branches</li>
+<li><code>Nat</code></li>
+<li><code>Int</code></li>
+<li><code>Float</code></li>
 </ul>
-<p>Aside from pairs and whole values, <a href="./unit.html">unit</a> types can be matched in patterns, too.</p>
-<p>Here are some examples:</p>
-<pre><code class="language-par">def Five: Int =
-  let (x) y = (3) 2
-  in x + y
+<p>Type aliases that expand to one of these types, and type variables constrained with <code>number</code> or
+<code>signed</code>, also satisfy <code>number</code>.</p>
+<p><code>number</code> does not provide subtraction or negation, because <code>Nat</code> is a number but not signed.</p>
+<h2 id="the-signed-constraint"><a class="header" href="#the-signed-constraint">The <code>signed</code> Constraint</a></h2>
+<p>The <code>signed</code> constraint is the numeric constraint for types that support negative values. It has
+everything from <code>number</code>, plus:</p>
+<ul>
+<li><code>-</code></li>
+<li><code>neg</code></li>
+</ul>
+<pre><code class="language-par">dec Difference : &lt;a: signed&gt;[(a) a] a
+def Difference = &lt;a: signed&gt;[(left) right] left - right
 
-def FiveSymmetrically: Int =
-  let (x, y)! = (3, 2)!
-  in x + y
-
-dec AddSymmetricPair : [(Int, Int)!] Int
-def AddSymmetricPair = [(x, y)!] x + y
-//                      \_____/&lt;---- pattern here
-
-dec SumList : [List&lt;Int&gt;] Int
-def SumList = [list] list.begin.case {
-  .end!       =&gt; 0,
-  .item(x) xs =&gt; x + xs.loop,
-//     \____/&lt;---- pattern here
-}
+dec Negate : &lt;a: signed&gt;[a] a
+def Negate = &lt;a: signed&gt;[value] neg value
 </code></pre>
+<p>The signed types are:</p>
+<ul>
+<li><code>Int</code></li>
+<li><code>Float</code></li>
+</ul>
+<p>Type aliases that expand to <code>Int</code> or <code>Float</code>, and type variables constrained with <code>signed</code>, also
+satisfy <code>signed</code>.</p>
+<p><code>Nat</code> is intentionally not signed.</p>
+<h2 id="choosing-a-constraint"><a class="header" href="#choosing-a-constraint">Choosing a Constraint</a></h2>
+<p>Use the weakest constraint that gives the function what it needs:</p>
+<ul>
+<li>Use <code>box</code> when you only need to copy, reuse, or drop values.</li>
+<li>Use <code>data</code> when you need comparison or <code>#{...}</code> display.</li>
+<li>Use <code>number</code> when you need generic zero, addition, multiplication, or division.</li>
+<li>Use <code>signed</code> when you also need subtraction or negation.</li>
+</ul>
+<p>This keeps generic APIs as flexible as possible while still making their capabilities clear.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../types/either.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../types/box.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../types/function.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../types/exists.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -260,11 +336,11 @@ def SumList = [list] list.begin.case {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../types/either.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../types/box.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../types/function.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../types/exists.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

@@ -128,10 +128,10 @@
                         <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <i id="print-button" class="fa fa-print"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
+                        <a href="https://github.com/par-team/par-lang/tree/main/docs" title="Git repository" aria-label="Git repository">
                             <i id="git-repository-button" class="fa fa-github"></i>
                         </a>
-                        <a href="https://github.com/faiface/par-lang/edit/main/docs/src/types/implicit_generics.md" title="Suggest an edit" aria-label="Suggest an edit">
+                        <a href="https://github.com/par-team/par-lang/edit/main/docs/src/types/implicit_generics.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
 
@@ -169,14 +169,14 @@ import {
   @core/String
 }
 
-dec Swap : [type a, b] [(a, b)!] (b, a)!
-def Swap = [type a, b] [pair]
+dec Swap : [type a, type b, (a, b)!] (b, a)!
+def Swap = [type a, type b, pair]
   let (first, second)! = pair
   in (second, first)!
 </code></pre>
 <p>With <code>forall</code>, callers pass types explicitly when they use <code>Swap</code>:</p>
 <pre><code class="language-par">def Pair = ("Hello!", 42)!
-def Swapped = Swap(type String, Int)(Pair)
+def Swapped = Swap(type String, type Int, Pair)
 </code></pre>
 <p>That is precise and fully explicit. But in many everyday cases, the types are
 obvious from the value you are passing. For those cases, Par also has <strong>implicit
@@ -213,6 +213,8 @@ whether it is implicit or explicit:</p>
 <li>If it is explicit (<code>[type a]</code>), it is always specified by the caller.</li>
 </ul>
 <p>This is intentional: it keeps call sites predictable.</p>
+<p>Implicit type parameters can also carry constraints, such as <code>&lt;a: box&gt;</code> or
+<code>&lt;a: data&gt;</code>. The constraints themselves are covered in <a href="./constraints.html">Type Constraints</a>.</p>
 <h2 id="construction"><a class="header" href="#construction">Construction</a></h2>
 <p>Start with the <code>Swap</code> example, but make it implicit:</p>
 <pre><code class="language-par">dec Swap : &lt;a, b&gt;[(a, b)!] (b, a)!
@@ -247,43 +249,30 @@ example by ascribing a type to an expression:</p>
 <p>If you wrote <code>Concat(*(), numbers)</code>, the empty list <code>*()</code> would lead <code>a</code> to be
 inferred as <code>either {}</code> (an impossible type), so inference would not pick <code>Nat</code>
 for you.</p>
-<h2 id="when-implicit-generics-are-a-bad-fit"><a class="header" href="#when-implicit-generics-are-a-bad-fit">When implicit generics are a bad fit</a></h2>
+<h2 id="higher-order-arguments"><a class="header" href="#higher-order-arguments">Higher-order arguments</a></h2>
 <p>Implicit generics infer their type variables from the <em>argument value</em>. This
-works great when that argument already has a clear type (globals, variables,
-fully typed expressions), but it becomes harder when the argument’s type cannot
-be inferred without annotations.</p>
+works great when that argument already has a clear type, and Par can also use
+the expected argument type to check expressions whose type is only partially
+known.</p>
 <p>A classic example is an anonymous function. The <code>box</code> here is not the point —
 it just happens that <code>Map</code> takes a boxed function.</p>
-<pre><code class="language-par">Map(numbers, box Int.ToString)        // fine: Int.ToString has a known type
-Map(numbers, box [x] Int.ToString(x)) // may fail without more info
-</code></pre>
-<p>(<code>Map</code> is discussed in <a href="./box.html">Box</a>.)</p>
-<p>In the second call, the type of <code>[x] ...</code> cannot be inferred unless the type of
-<code>x</code> is specified. If the function’s type parameters are being inferred from the
-mapper argument itself, you end up in a chicken-and-egg situation.</p>
-<p>The usual fix is to add an annotation:</p>
-<pre><code class="language-par">Map(numbers, box [x: Int] Int.ToString(x))
-</code></pre>
-<p>This is why implicit generics can be <em>made difficult</em> by higher-order arguments
-like lambdas: if the type of the lambda argument is not already specified, the
-lambda’s type won’t be inferred.</p>
-<p>For example, if <code>Map</code> tried to infer the result type from the mapper itself:</p>
 <pre><code class="language-par">dec Map : &lt;a&gt;[List&lt;a&gt;] &lt;b&gt;[box [a] b] List&lt;b&gt;
 </code></pre>
-<p>then a call like this may fail:</p>
-<pre><code class="language-par">Map(numbers, box [x] Int.ToString(x))
+<p>The list argument infers <code>a</code>. When checking the mapper, <code>b</code> is still unknown,
+but the checker can still use the partial expected type <code>box [a] b</code>. That means
+the lambda parameter gets type <code>a</code>, while constraints from the lambda body solve
+<code>b</code>:</p>
+<pre><code class="language-par">Map(numbers, box [x] `#{x}`)
 </code></pre>
-<p>because the type of <code>x</code> is not specified, so the type of the function cannot be
-inferred, so <code>b</code> cannot be inferred either. You end up needing to annotate <code>x</code>:</p>
-<pre><code class="language-par">Map(numbers, box [x: Int] Int.ToString(x))
+<p>Here <code>x</code> is checked using the element type of <code>numbers</code>, and the string
+interpolation result infers <code>b = String</code>.</p>
+<p>You may still need a local annotation when the argument does not constrain the
+type enough. Empty structures are the usual example:</p>
+<pre><code class="language-par">Concat(type List&lt;Nat&gt; in *(), numbers)
 </code></pre>
-<p>Many “map-like” APIs therefore prefer to infer the input type and keep the
-output type explicit, e.g.:</p>
-<pre><code class="language-par">dec Map : &lt;a&gt;[List&lt;a&gt;] [type b] [box [a] b] List&lt;b&gt;
-</code></pre>
-<p>With this type, the mapper is checked against the expected type <code>box [a] b</code>, so
-<code>x</code> can be inferred as <code>a</code> and usually needs no annotation. Picking the result
-type <code>b</code> is also often more natural than restating the argument type.</p>
+<p>The annotation is on the value being passed, not on the implicit type parameter.
+There is still no syntax for manually passing an implicit type argument.</p>
+<p>(<code>Map</code> is discussed in <a href="./box.html">Box</a>.)</p>
 <h2 id="implicit-generics-and-pairs"><a class="header" href="#implicit-generics-and-pairs">Implicit generics and pairs</a></h2>
 <p>Implicit generics also exist for <a href="./pair.html">pair</a> types. This is the implicit
 counterpart of <a href="./exists.html"><code>exists</code></a>.</p>
@@ -296,7 +285,7 @@ small “vtable” for dropping it (a boxed <a href="./choice.html">choice</a>):
 }
 </code></pre>
 <p>This is the implicit counterpart of the existential type:</p>
-<pre><code class="language-par">type DropMe = (type a) (a) box choice {
+<pre><code class="language-par">type DropMe = (type a, a) box choice {
   .drop(a) =&gt; !,
 }
 </code></pre>
