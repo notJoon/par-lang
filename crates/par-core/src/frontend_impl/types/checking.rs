@@ -1611,7 +1611,12 @@ impl<S: Clone + Eq + std::hash::Hash> Context<S> {
         mode: &ProcessAnalyzerMode,
         emit: &mut impl FnMut(TypeError<S>),
     ) -> (Command<Type<S>, S>, Option<Type<S>>) {
-        if let Some(inference_subject) = inference_subject {
+        // when inferring another subject, .begin is only problematic if this
+        // object's type is still unknown. known recursive types
+        // can be checked normally.
+        if let Some(inference_subject) = inference_subject
+            && !matches!(typ, Type::Recursive { .. })
+        {
             emit(TypeError::TypeMustBeKnownAtThisPoint(
                 span.clone(),
                 inference_subject.clone(),
@@ -1693,7 +1698,7 @@ impl<S: Clone + Eq + std::hash::Hash> Context<S> {
         if let Err(e) = self.put(span, object.clone(), expanded) {
             emit(e);
         }
-        let (process, _inferred_type) = self.analyze_process(process, mode, emit);
+        let (process, inferred_type) = self.analyze_process(process, mode, emit);
         (
             Command::Begin {
                 unfounded,
@@ -1701,7 +1706,7 @@ impl<S: Clone + Eq + std::hash::Hash> Context<S> {
                 captures: captures.clone(),
                 body: process,
             },
-            None,
+            inferred_type,
         )
     }
 

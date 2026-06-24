@@ -1,0 +1,89 @@
+// ref: https://github.com/par-team/par-lang/issues/218
+module BeginInference
+
+import {
+  @core/Bool
+  @core/List
+  @core/Nat
+  @core/Option
+  @core/Test
+  @core/Try
+}
+
+dec Head : <a: box> [List<a>] Option<a>
+def Head = <a: box> [items] chan return {
+  let res = items.begin.case {
+    .end! => .none!,
+    .item(x) _ => .some x,
+  }
+  return <> res
+}
+
+dec HeadAnnotated : <a: box> [List<a>] Option<a>
+def HeadAnnotated = <a: box> [items] chan return {
+  let res: Option<a> = items.begin.case {
+    .end! => .none!,
+    .item(x) _ => .some x,
+  }
+  return <> res
+}
+
+dec IsEmpty : <a: box> [List<a>] Bool
+def IsEmpty = <a: box> [items] chan return {
+  return <> items.begin.case {
+    .end! => .true!,
+    .item(_) _ => .false!,
+  }
+}
+
+dec FirstOk : [List<Nat>] Try<!, Nat>
+def FirstOk = [items] chan return {
+  catch e => { return <> .err e }
+  let try head = items.begin.case {
+    .end! => .err !,
+    .item(x) _ => .ok x,
+  }
+  return <> .ok head
+}
+
+def TestBeginInference : [Test] ! = [test] do {
+  let emptyList: List<Nat> = *()
+  let emptyIsNone = Head(emptyList).case {
+    .some _ => .false!,
+    .none! => .true!,
+  }
+  test.assert("Head of empty list is none", emptyIsNone)
+
+  let firstIsSeven = Head(*(7, 8, 9)).case {
+    .some x => x == 7,
+    .none! => .false!,
+  }
+  test.assert("Head of *(7, 8, 9) is some 7", firstIsSeven)
+
+  let annotatedIsOne = HeadAnnotated(*(1, 2)).case {
+    .some x => x == 1,
+    .none! => .false!,
+  }
+  test.assert("HeadAnnotated of *(1, 2) is some 1", annotatedIsOne)
+
+  let anotherEmpty: List<Nat> = *()
+  test.assert("IsEmpty of empty list is true", IsEmpty(anotherEmpty))
+
+  let single: List<Nat> = *(1)
+  test.assert("IsEmpty of *(1) is false", IsEmpty(single).case {
+    .true! => .false!,
+    .false! => .true!,
+  })
+
+  let firstOk = FirstOk(*(5, 6)).case {
+    .ok x => x == 5,
+    .err! => .false!,
+  }
+  test.assert("FirstOk of *(5, 6) is ok 5", firstOk)
+
+  let firstErr = FirstOk(*()).case {
+    .ok _ => .false!,
+    .err! => .true!,
+  }
+  test.assert("FirstOk of empty list is err", firstErr)
+} in !
