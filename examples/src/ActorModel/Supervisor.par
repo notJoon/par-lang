@@ -38,6 +38,18 @@ export {
   dec TwoCounters : [Nat, Nat, Nat] TwoCounterSupervisor
 }
 
+dec ClosedRef : [Nat] Actor.ActorRef<Actor.CounterMessage>
+
+def ClosedRef = [_]
+  // TODO: replace this placeholder mailbox with explicit ActorRef liveness semantics.
+  // It rejects newly requested stopped-child refs, but it is not a real stopped actor.
+  let (ref) (receiver) deadLetters = Mailbox.New(type Actor.CounterMessage, 1) in
+  do {
+    ref.trySend(.stop!)[_]
+    receiver.close
+    deadLetters.close
+  } in Actor.Ref(type Actor.CounterMessage, ref)
+
 // TODO: add generation/liveness checks if old refs must reject after restart.
 // Next step: move child state transitions into an independent actor process.
 def TwoCounters = [maxRestarts, leftInitial, rightInitial]
@@ -94,6 +106,12 @@ def TwoCounters = [maxRestarts, leftInitial, rightInitial]
       } in (.restarted!) loop,
 
       else => do {
+        leftRef.close
+        leftReceiver.close
+        leftDeadLetters.close
+        // TODO: replace this placeholder endpoint with an explicit stopped child state.
+        // The loop currently still needs endpoint variables of the same type.
+        let (leftRef) (leftReceiver) leftDeadLetters = Mailbox.New(type Actor.CounterMessage, 4)
         let left = leftInitial
         let leftStopped = .true!
       } in (.stopped!) loop,
@@ -111,6 +129,12 @@ def TwoCounters = [maxRestarts, leftInitial, rightInitial]
       } in (.restarted!) loop,
 
       else => do {
+        rightRef.close
+        rightReceiver.close
+        rightDeadLetters.close
+        // TODO: replace this placeholder endpoint with an explicit stopped child state.
+        // The loop currently still needs endpoint variables of the same type.
+        let (rightRef) (rightReceiver) rightDeadLetters = Mailbox.New(type Actor.CounterMessage, 4)
         let right = rightInitial
         let rightStopped = .true!
       } in (.stopped!) loop,
@@ -128,8 +152,14 @@ def TwoCounters = [maxRestarts, leftInitial, rightInitial]
       rightStopped => .stopped!,
       else => .running!,
     }) loop,
-    .leftRef => (Actor.Ref(type Actor.CounterMessage, leftRef)) loop,
-    .rightRef => (Actor.Ref(type Actor.CounterMessage, rightRef)) loop,
+    .leftRef => if {
+      leftStopped => (ClosedRef(0)) loop,
+      else => (Actor.Ref(type Actor.CounterMessage, leftRef)) loop,
+    }
+    .rightRef => if {
+      rightStopped => (ClosedRef(0)) loop,
+      else => (Actor.Ref(type Actor.CounterMessage, rightRef)) loop,
+    }
     .stop => do {
       leftRef.close
       leftReceiver.close

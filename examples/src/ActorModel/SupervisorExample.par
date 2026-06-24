@@ -46,6 +46,28 @@ def TestRestartLimitStopsFailedChild : [Test] ! = [test] do {
     .assert("restart count stops at the configured limit", leftRestarts == 1)
 } in !
 
+def TestStoppedChildRefRejectsMessages : [Test] ! = [test] do {
+  let supervisor = Supervisor.TwoCounters(0, 0, 100)
+
+  supervisor.failLeft[decision]
+  supervisor.leftRef[leftRef]
+  leftRef.trySend(.inc!)[sent]
+  supervisor.left[left]
+  supervisor.leftStatus[leftStatus]
+  supervisor.stop
+
+  let rejected = sent.case {
+    .ok! => .false!,
+    .err _ => .true!,
+  }
+
+  test
+    .assert("failure at restart limit stops child", decision is .stopped!)
+    .assert("stopped child ref rejects later messages", rejected)
+    .assert("stopped child state remains unchanged", left == 0)
+    .assert("stopped child status remains visible", leftStatus is .stopped!)
+} in !
+
 def TestRestartReplacesSupervisorChildBoundary : [Test] ! = [test] do {
   let supervisor = Supervisor.TwoCounters(2, 0, 100)
 
