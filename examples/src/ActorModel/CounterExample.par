@@ -10,7 +10,7 @@ import {
 }
 
 type NatRequest = either {
-  .get Mailbox.Sender<Nat>
+  .get Actor.ActorRef<Nat>
 }
 
 def CounterStartingAtZero : Actor.CounterHandle =
@@ -93,9 +93,8 @@ def TestMailboxReceiveAcceptedMessage : [Test] ! = [test] do {
 def TestMailboxClosedSendDeadLettersMessage : [Test] ! = [test] do {
   let (sender) (receiver) deadLetters = Mailbox.New(type Nat, 1)
 
-  let senderAfterClose = sender
-  let ! = sender.close
-  senderAfterClose.trySend(7)[result]
+  let ! = receiver.close
+  sender.trySend(7)[result]
   deadLetters.receive[dead]
   let sendFailedClosed = result.case {
     .ok! => .false!,
@@ -109,11 +108,11 @@ def TestMailboxClosedSendDeadLettersMessage : [Test] ! = [test] do {
 
   cleanupReady.case {
     .true! => {
-      receiver.close
+      sender.close
       deadLetters.close
     }
     .false! => {
-      receiver.close
+      sender.close
       deadLetters.close
     }
   }
@@ -155,7 +154,7 @@ def TestTellSendsMessage : [Test] ! = [test] do {
 def TestAskUsesReplyChannel : [Test] ! = [test] do {
   let (sender) (receiver) deadLetters = Mailbox.New(type NatRequest, 1)
 
-  let pending: Try<Mailbox.SendError, Try<Mailbox.ReceiveError, Nat>> = chan answer {
+  let pending: Try<Actor.AskError, Nat> = chan answer {
     answer <> Actor.Ask(type Nat, type NatRequest, sender, box [replyTo] .get replyTo)
   }
   receiver.receive[received]
@@ -170,10 +169,7 @@ def TestAskUsesReplyChannel : [Test] ! = [test] do {
   }
   let answer = pending
   let askGotAnswer = answer.case {
-    .ok received => received.case {
-      .ok value => value == 42,
-      .err _ => .false!,
-    }
+    .ok value => value == 42,
     .err _ => .false!,
   }
   let cleanupReady = replied and askGotAnswer
@@ -200,7 +196,7 @@ def TestPipeForwardsAskResult : [Test] ! = [test] do {
   let (sourceSender) (sourceReceiver) sourceDeadLetters = Mailbox.New(type NatRequest, 1)
   let (targetSender) (targetReceiver) targetDeadLetters = Mailbox.New(type Nat, 1)
 
-  let pending: Try<Mailbox.SendError, !> = chan result {
+  let pending: Try<Actor.PipeError, !> = chan result {
     result <> Actor.Pipe(
       type Nat,
       type NatRequest,

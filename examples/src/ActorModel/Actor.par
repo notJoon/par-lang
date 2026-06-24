@@ -8,14 +8,24 @@ import {
 }
 
 export {
-  type ActorRef<msg> = iterative choice {
-    .tell(msg) => self
-    .stop => !
-  }
+  // TODO: promote this type to a wrapper only if it needs
+  // actor specigic behavior.
+  type ActorRef<msg> = Mailbox.Sender<msg>
 
   type ActorStep<state, msg> = recursive either {
     .continue(state) box [state, msg] self
     .stop!
+  }
+
+  type AskError = either {
+    .send Mailbox.SendError
+    .receive Mailbox.ReceiveError
+  }
+
+  type PipeError = either {
+    .askSend Mailbox.SendError
+    .askReceive Mailbox.ReceiveError
+    .targetSend Mailbox.SendError
   }
 
   type CounterReply = choice {
@@ -39,14 +49,14 @@ export {
   dec Counter : [Nat] CounterHandle
   dec CounterValueAfterScript : [Nat] Nat
 
-  dec Tell : [type msg, Mailbox.Sender<msg>, msg] (Try<Mailbox.SendError, !>) Mailbox.Sender<msg>
+  dec Tell : [type msg, ActorRef<msg>, msg] (Try<Mailbox.SendError, !>) ActorRef<msg>
   dec Ask :
-    [type a, type msg, Mailbox.Sender<msg>, box [Mailbox.Sender<a>] msg]
-    Try<Mailbox.SendError, Try<Mailbox.ReceiveError, a>>
+    [type a, type msg, ActorRef<msg>, box [ActorRef<a>] msg]
+    Try<AskError, a>
   dec Pipe :
-    [type a, type sourceMsg, type targetMsg, Mailbox.Sender<sourceMsg>, box [Mailbox.Sender<a>] sourceMsg, Mailbox.Sender<targetMsg>, box [a] targetMsg]
-    Try<Mailbox.SendError, !>
-  dec Broadcast : [type msg: box, List<Mailbox.Sender<msg>>, msg] List<Try<Mailbox.SendError, !>>
+    [type a, type sourceMsg, type targetMsg, ActorRef<sourceMsg>, box [ActorRef<a>] sourceMsg, ActorRef<targetMsg>, box [a] targetMsg]
+    Try<PipeError, !>
+  dec Broadcast : [type msg: box, List<ActorRef<msg>>, msg] List<Try<Mailbox.SendError, !>>
 }
 
 def Counter = [initial]
@@ -81,24 +91,30 @@ def Ask = [type a, type msg, actor, build] do {
       replyReceiver.receive[received]
       replyReceiver.close
       replyDeadLetters.close
-    } in .ok received,
+    } in received.case {
+      .ok value => .ok value,
+      .err reason => .err .receive reason,
+    },
     .err reason => do {
       replyReceiver.close
       replyDeadLetters.close
-    } in .err reason,
+    } in .err .send reason,
   }
 } in answer
 
 def Pipe = [type a, type sourceMsg, type targetMsg, source, build, target, map] do {
   let asked = Ask(type a, type sourceMsg, source, build)
 } in asked.case {
-  .ok received => received.case {
-    .ok value => do {
-      target.trySend(map(value))[result]
-    } in result,
-    .err _ => .err .closed!,
-  }
-  .err reason => .err reason,
+  .ok value => do {
+    target.trySend(map(value))[result]
+  } in result.case {
+    .ok! => .ok!,
+    .err reason => .err .targetSend reason,
+  },
+  .err error => error.case {
+    .send reason => .err .askSend reason,
+    .receive reason => .err .askReceive reason,
+  },
 }
 
 def Broadcast = [type msg: box, actors, message]
