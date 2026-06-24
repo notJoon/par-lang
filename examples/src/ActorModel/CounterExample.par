@@ -125,7 +125,8 @@ def TestMailboxClosedSendDeadLettersMessage : [Test] ! = [test] do {
 def TestTellSendsMessage : [Test] ! = [test] do {
   let (sender) (receiver) deadLetters = Mailbox.New(type Nat, 1)
 
-  let (sent) sender = Actor.Tell(type Nat, sender, 11)
+  let actor = Actor.Ref(type Nat, sender)
+  let (sent) _ = Actor.Tell(type Nat, actor, 11)
   receiver.receive[received]
   let receivedEleven = received.case {
     .ok value => value == 11,
@@ -153,16 +154,16 @@ def TestTellSendsMessage : [Test] ! = [test] do {
 
 def TestAskUsesReplyChannel : [Test] ! = [test] do {
   let (sender) (receiver) deadLetters = Mailbox.New(type NatRequest, 1)
+  let actor = Actor.Ref(type NatRequest, sender)
 
   let pending: Try<Actor.AskError, Nat> = chan answer {
-    answer <> Actor.Ask(type Nat, type NatRequest, sender, box [replyTo] .get replyTo)
+    answer <> Actor.Ask(type Nat, type NatRequest, actor, box [replyTo] .get replyTo)
   }
   receiver.receive[received]
   let replied = received.case {
     .ok request => request.case {
       .get replyTo => do {
         replyTo.trySend(42)[sent]
-        replyTo.close
       } in sent is .ok!,
     }
     .err _ => .false!,
@@ -195,15 +196,17 @@ def TestAskUsesReplyChannel : [Test] ! = [test] do {
 def TestPipeForwardsAskResult : [Test] ! = [test] do {
   let (sourceSender) (sourceReceiver) sourceDeadLetters = Mailbox.New(type NatRequest, 1)
   let (targetSender) (targetReceiver) targetDeadLetters = Mailbox.New(type Nat, 1)
+  let source = Actor.Ref(type NatRequest, sourceSender)
+  let target = Actor.Ref(type Nat, targetSender)
 
   let pending: Try<Actor.PipeError, !> = chan result {
     result <> Actor.Pipe(
       type Nat,
       type NatRequest,
       type Nat,
-      sourceSender,
+      source,
       box [replyTo] .get replyTo,
-      targetSender,
+      target,
       box [value] value + 1,
     )
   }
@@ -212,7 +215,6 @@ def TestPipeForwardsAskResult : [Test] ! = [test] do {
     .ok request => request.case {
       .get replyTo => do {
         replyTo.trySend(4)[sent]
-        replyTo.close
       } in sent is .ok!,
     }
     .err _ => .false!,
@@ -253,8 +255,10 @@ def TestPipeForwardsAskResult : [Test] ! = [test] do {
 def TestBroadcastSendsBoxedMessageToEveryActor : [Test] ! = [test] do {
   let (sender1) (receiver1) deadLetters1 = Mailbox.New(type Nat, 1)
   let (sender2) (receiver2) deadLetters2 = Mailbox.New(type Nat, 1)
+  let actor1 = Actor.Ref(type Nat, sender1)
+  let actor2 = Actor.Ref(type Nat, sender2)
 
-  let sent = Actor.Broadcast(type Nat, *(sender1, sender2), 9)
+  let sent = Actor.Broadcast(type Nat, *(actor1, actor2), 9)
   receiver1.receive[received1]
   receiver2.receive[received2]
   let allSent = sent->List.All(box [result] result is .ok!)

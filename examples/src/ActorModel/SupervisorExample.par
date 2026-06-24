@@ -1,0 +1,63 @@
+module SupervisorExample
+
+import {
+  @core/Test
+  ActorModel/Supervisor
+}
+
+def TestOneForOneRestartOnlyFailedChild : [Test] ! = [test] do {
+  let supervisor = Supervisor.TwoCounters(2, 0, 100)
+
+  supervisor.incLeft
+  supervisor.incLeft
+  supervisor.incRight
+  supervisor.failLeft[leftDecision]
+  supervisor.left[left]
+  supervisor.right[right]
+  supervisor.leftRestarts[leftRestarts]
+  supervisor.rightRestarts[rightRestarts]
+  supervisor.stop
+
+  test
+    .assert("failed child restarts", leftDecision is .restarted!)
+    .assert("failed child returns to its initial state", left == 0)
+    .assert("unrelated child keeps its state", right == 101)
+    .assert("failed child restart count increments", leftRestarts == 1)
+    .assert("unrelated child restart count is unchanged", rightRestarts == 0)
+} in !
+
+def TestRestartLimitStopsFailedChild : [Test] ! = [test] do {
+  let supervisor = Supervisor.TwoCounters(1, 0, 100)
+
+  supervisor.failLeft[first]
+  supervisor.incLeft
+  supervisor.failLeft[second]
+  supervisor.incLeft
+  supervisor.left[left]
+  supervisor.leftStatus[leftStatus]
+  supervisor.leftRestarts[leftRestarts]
+  supervisor.stop
+
+  test
+    .assert("first failure restarts within limit", first is .restarted!)
+    .assert("second failure stops child after restart limit", second is .stopped!)
+    .assert("stopped child no longer handles state changes", left == 0)
+    .assert("stopped child status is visible", leftStatus is .stopped!)
+    .assert("restart count stops at the configured limit", leftRestarts == 1)
+} in !
+
+def TestRestartReplacesSupervisorChildBoundary : [Test] ! = [test] do {
+  let supervisor = Supervisor.TwoCounters(2, 0, 100)
+
+  supervisor.leftRef[oldLeft]
+  supervisor.incLeft
+  supervisor.failLeft[decision]
+  oldLeft.trySend(.inc!)[_]
+  supervisor.incLeft
+  supervisor.left[left]
+  supervisor.stop
+
+  test
+    .assert("failed child restarts", decision is .restarted!)
+    .assert("old child ref does not affect replacement child", left == 1)
+} in !

@@ -1,0 +1,141 @@
+module Supervisor
+
+import {
+  @core/Bool
+  @core/Nat
+  @mpsc/Mailbox
+  ActorModel/Actor
+}
+
+export {
+  type RestartDecision = either {
+    .restarted!
+    .stopped!
+  }
+
+  type ChildStatus = either {
+    .running!
+    .stopped!
+  }
+
+  type TwoCounterSupervisor = iterative choice {
+    .incLeft => self
+    .incRight => self
+    .failLeft => (RestartDecision) self
+    .failRight => (RestartDecision) self
+    .left => (Nat) self
+    .right => (Nat) self
+    .leftRestarts => (Nat) self
+    .rightRestarts => (Nat) self
+    .leftStatus => (ChildStatus) self
+    .rightStatus => (ChildStatus) self
+    .leftRef => (Actor.ActorRef<Actor.CounterMessage>) self
+    .rightRef => (Actor.ActorRef<Actor.CounterMessage>) self
+    .stop => !
+  }
+
+  // Starts a one-for-one supervisor: [maxRestarts, leftInitial, rightInitial].
+  dec TwoCounters : [Nat, Nat, Nat] TwoCounterSupervisor
+}
+
+// TODO: add generation/liveness checks if old refs must reject after restart.
+// Next step: move child state transitions into an independent actor process.
+def TwoCounters = [maxRestarts, leftInitial, rightInitial]
+  let (leftRef) (leftReceiver) leftDeadLetters = Mailbox.New(type Actor.CounterMessage, 4) in
+  let (rightRef) (rightReceiver) rightDeadLetters = Mailbox.New(type Actor.CounterMessage, 4) in
+  let left = leftInitial in
+  let right = rightInitial in
+  let leftRestarts = 0 in
+  let rightRestarts = 0 in
+  let leftStopped: Bool = .false! in
+  let rightStopped: Bool = .false! in
+  begin case {
+    .incLeft => if {
+      leftStopped => loop,
+      else => do {
+        leftRef.trySend(.inc!)[_]
+        leftReceiver.receive[received]
+      } in received.case {
+        .ok message => message.case {
+          .inc! => let left = left + 1 in loop,
+          .add amount => let left = left + amount in loop,
+          .get replyTo => let ! = replyTo(left) in loop,
+          .stop! => let leftStopped = .true! in loop,
+        },
+        .err _ => loop,
+      },
+    }
+
+    .incRight => if {
+      rightStopped => loop,
+      else => do {
+        rightRef.trySend(.inc!)[_]
+        rightReceiver.receive[received]
+      } in received.case {
+        .ok message => message.case {
+          .inc! => let right = right + 1 in loop,
+          .add amount => let right = right + amount in loop,
+          .get replyTo => let ! = replyTo(right) in loop,
+          .stop! => let rightStopped = .true! in loop,
+        },
+        .err _ => loop,
+      },
+    }
+
+    .failLeft => if {
+      leftRestarts < maxRestarts => do {
+        leftRef.close
+        leftReceiver.close
+        leftDeadLetters.close
+        let (leftRef) (leftReceiver) leftDeadLetters = Mailbox.New(type Actor.CounterMessage, 4)
+        let left = leftInitial
+        let leftRestarts = leftRestarts + 1
+        let leftStopped = .false!
+      } in (.restarted!) loop,
+
+      else => do {
+        let left = leftInitial
+        let leftStopped = .true!
+      } in (.stopped!) loop,
+    }
+
+    .failRight => if {
+      rightRestarts < maxRestarts => do {
+        rightRef.close
+        rightReceiver.close
+        rightDeadLetters.close
+        let (rightRef) (rightReceiver) rightDeadLetters = Mailbox.New(type Actor.CounterMessage, 4)
+        let right = rightInitial
+        let rightRestarts = rightRestarts + 1
+        let rightStopped = .false!
+      } in (.restarted!) loop,
+
+      else => do {
+        let right = rightInitial
+        let rightStopped = .true!
+      } in (.stopped!) loop,
+    }
+
+    .left => (left) loop,
+    .right => (right) loop,
+    .leftRestarts => (leftRestarts) loop,
+    .rightRestarts => (rightRestarts) loop,
+    .leftStatus => (if {
+      leftStopped => .stopped!,
+      else => .running!,
+    }) loop,
+    .rightStatus => (if {
+      rightStopped => .stopped!,
+      else => .running!,
+    }) loop,
+    .leftRef => (Actor.Ref(type Actor.CounterMessage, leftRef)) loop,
+    .rightRef => (Actor.Ref(type Actor.CounterMessage, rightRef)) loop,
+    .stop => do {
+      leftRef.close
+      leftReceiver.close
+      leftDeadLetters.close
+      rightRef.close
+      rightReceiver.close
+      rightDeadLetters.close
+    } in !,
+  }

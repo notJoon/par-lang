@@ -8,9 +8,11 @@ import {
 }
 
 export {
-  // TODO: promote this type to a wrapper only if it needs
-  // actor specigic behavior.
-  type ActorRef<msg> = Mailbox.Sender<msg>
+  // Public actor refs expose send capability only.
+  // Lifecycle operations stay with the owner of the underlying mailbox sender.
+  type ActorRef<msg> = iterative box choice {
+    .trySend(msg) => (Try<Mailbox.SendError, !>) self
+  }
 
   type ActorStep<state, msg> = recursive either {
     .continue(state) box [state, msg] self
@@ -49,6 +51,7 @@ export {
   dec Counter : [Nat] CounterHandle
   dec CounterValueAfterScript : [Nat] Nat
 
+  dec Ref : [type msg, Mailbox.Sender<msg>] ActorRef<msg>
   dec Tell : [type msg, ActorRef<msg>, msg] (Try<Mailbox.SendError, !>) ActorRef<msg>
   dec Ask :
     [type a, type msg, ActorRef<msg>, box [ActorRef<a>] msg]
@@ -77,13 +80,20 @@ def CounterValueAfterScript = [initial] chan reply {
   reply <> value
 }
 
+def Ref = [type msg, sender] begin box case {
+  .trySend(message) => do {
+    sender.trySend(message)[result]
+  } in (result) loop,
+}
+
 def Tell = [type msg, actor, message] do {
   actor.trySend(message)[result]
 } in (result) actor
 
 def Ask = [type a, type msg, actor, build] do {
   let (replySender) (replyReceiver) replyDeadLetters = Mailbox.New(type a, 1)
-  actor.trySend(build(replySender))[sent]
+  let replyTo = Ref(type a, replySender)
+  actor.trySend(build(replyTo))[sent]
   let answer = sent.case {
     .ok! => do {
       // TODO: Add timeout/cancel or explicit reply mailbox close semantics.
