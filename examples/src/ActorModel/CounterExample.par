@@ -1,9 +1,16 @@
 module CounterExample
 
 import {
+  @core/List
   @core/Nat
   @core/Test
+  @core/Try
+  @mpsc/Mailbox
   ActorModel/Actor
+}
+
+type NatRequest = either {
+  .get Mailbox.Sender<Nat>
 }
 
 def CounterStartingAtZero : Actor.CounterHandle =
@@ -17,4 +24,275 @@ def TestCounterTellAndAsk : [Test] ! = [test] do {
     "counter actor handles typed tell and typed request/reply",
     Actor.CounterValueAfterScript(10) == 15,
   )
+} in !
+
+def TestMailboxFullSendDeadLettersMessage : [Test] ! = [test] do {
+  let (sender) (receiver) deadLetters = Mailbox.New(type Nat, 1)
+
+  sender.trySend(1)[first]
+  sender.trySend(2)[second]
+  deadLetters.receive[dead]
+  let secondFailedFull = second.case {
+    .ok! => .false!,
+    .err reason => reason is .full!,
+  }
+  let deadLetteredSecond = dead.case {
+    .ok(reason) value => reason is .full! and value == 2,
+    .err _ => .false!,
+  }
+  let cleanupReady = secondFailedFull and deadLetteredSecond
+
+  cleanupReady.case {
+    .true! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+    .false! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+  }
+
+  test
+    .assert("first send into capacity-one mailbox succeeds", first is .ok!)
+    .assert("second send into full mailbox fails", secondFailedFull)
+    .assert("full send emits the rejected message as a dead letter", deadLetteredSecond)
+} in !
+
+def TestMailboxReceiveAcceptedMessage : [Test] ! = [test] do {
+  let (sender) (receiver) deadLetters = Mailbox.New(type Nat, 1)
+
+  sender.trySend(3)[sent]
+  receiver.receive[received]
+  let receivedThird = received.case {
+    .ok value => value == 3,
+    .err _ => .false!,
+  }
+  let cleanupReady = sent is .ok! and receivedThird
+
+  cleanupReady.case {
+    .true! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+    .false! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+  }
+
+  test
+    .assert("send into mailbox succeeds", sent is .ok!)
+    .assert("receiver gets the accepted message", receivedThird)
+} in !
+
+def TestMailboxClosedSendDeadLettersMessage : [Test] ! = [test] do {
+  let (sender) (receiver) deadLetters = Mailbox.New(type Nat, 1)
+
+  let senderAfterClose = sender
+  let ! = sender.close
+  senderAfterClose.trySend(7)[result]
+  deadLetters.receive[dead]
+  let sendFailedClosed = result.case {
+    .ok! => .false!,
+    .err reason => reason is .closed!,
+  }
+  let deadLetteredSeventh = dead.case {
+    .ok(reason) value => reason is .closed! and value == 7,
+    .err _ => .false!,
+  }
+  let cleanupReady = sendFailedClosed and deadLetteredSeventh
+
+  cleanupReady.case {
+    .true! => {
+      receiver.close
+      deadLetters.close
+    }
+    .false! => {
+      receiver.close
+      deadLetters.close
+    }
+  }
+
+  test
+    .assert("send after close reports closed", sendFailedClosed)
+    .assert("send after close emits the rejected message as a dead letter", deadLetteredSeventh)
+} in !
+
+def TestTellSendsMessage : [Test] ! = [test] do {
+  let (sender) (receiver) deadLetters = Mailbox.New(type Nat, 1)
+
+  let (sent) sender = Actor.Tell(type Nat, sender, 11)
+  receiver.receive[received]
+  let receivedEleven = received.case {
+    .ok value => value == 11,
+    .err _ => .false!,
+  }
+  let cleanupReady = sent is .ok! and receivedEleven
+
+  cleanupReady.case {
+    .true! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+    .false! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+  }
+
+  test
+    .assert("tell returns the mailbox send result", sent is .ok!)
+    .assert("tell sends the message to the receiver", receivedEleven)
+} in !
+
+def TestAskUsesReplyChannel : [Test] ! = [test] do {
+  let (sender) (receiver) deadLetters = Mailbox.New(type NatRequest, 1)
+
+  let pending: Try<Mailbox.SendError, Try<Mailbox.ReceiveError, Nat>> = chan answer {
+    answer <> Actor.Ask(type Nat, type NatRequest, sender, box [replyTo] .get replyTo)
+  }
+  receiver.receive[received]
+  let replied = received.case {
+    .ok request => request.case {
+      .get replyTo => do {
+        replyTo.trySend(42)[sent]
+        replyTo.close
+      } in sent is .ok!,
+    }
+    .err _ => .false!,
+  }
+  let answer = pending
+  let askGotAnswer = answer.case {
+    .ok received => received.case {
+      .ok value => value == 42,
+      .err _ => .false!,
+    }
+    .err _ => .false!,
+  }
+  let cleanupReady = replied and askGotAnswer
+
+  cleanupReady.case {
+    .true! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+    .false! => {
+      sender.close
+      receiver.close
+      deadLetters.close
+    }
+  }
+
+  test
+    .assert("ask sends a request carrying a reply channel", replied)
+    .assert("ask waits for the reply value", askGotAnswer)
+} in !
+
+def TestPipeForwardsAskResult : [Test] ! = [test] do {
+  let (sourceSender) (sourceReceiver) sourceDeadLetters = Mailbox.New(type NatRequest, 1)
+  let (targetSender) (targetReceiver) targetDeadLetters = Mailbox.New(type Nat, 1)
+
+  let pending: Try<Mailbox.SendError, !> = chan result {
+    result <> Actor.Pipe(
+      type Nat,
+      type NatRequest,
+      type Nat,
+      sourceSender,
+      box [replyTo] .get replyTo,
+      targetSender,
+      box [value] value + 1,
+    )
+  }
+  sourceReceiver.receive[sourceReceived]
+  let replied = sourceReceived.case {
+    .ok request => request.case {
+      .get replyTo => do {
+        replyTo.trySend(4)[sent]
+        replyTo.close
+      } in sent is .ok!,
+    }
+    .err _ => .false!,
+  }
+  targetReceiver.receive[targetReceived]
+  let pipeResult = pending
+  let targetGotFive = targetReceived.case {
+    .ok value => value == 5,
+    .err _ => .false!,
+  }
+  let cleanupReady = pipeResult is .ok! and replied and targetGotFive
+
+  cleanupReady.case {
+    .true! => {
+      sourceSender.close
+      sourceReceiver.close
+      sourceDeadLetters.close
+      targetSender.close
+      targetReceiver.close
+      targetDeadLetters.close
+    }
+    .false! => {
+      sourceSender.close
+      sourceReceiver.close
+      sourceDeadLetters.close
+      targetSender.close
+      targetReceiver.close
+      targetDeadLetters.close
+    }
+  }
+
+  test
+    .assert("pipe asks the source actor", replied)
+    .assert("pipe forwards the mapped result to the target actor", targetGotFive)
+    .assert("pipe returns the target send result", pipeResult is .ok!)
+} in !
+
+def TestBroadcastSendsBoxedMessageToEveryActor : [Test] ! = [test] do {
+  let (sender1) (receiver1) deadLetters1 = Mailbox.New(type Nat, 1)
+  let (sender2) (receiver2) deadLetters2 = Mailbox.New(type Nat, 1)
+
+  let sent = Actor.Broadcast(type Nat, *(sender1, sender2), 9)
+  receiver1.receive[received1]
+  receiver2.receive[received2]
+  let allSent = sent->List.All(box [result] result is .ok!)
+  let firstGotNine = received1.case {
+    .ok value => value == 9,
+    .err _ => .false!,
+  }
+  let secondGotNine = received2.case {
+    .ok value => value == 9,
+    .err _ => .false!,
+  }
+  let cleanupReady = allSent and firstGotNine and secondGotNine
+
+  cleanupReady.case {
+    .true! => {
+      sender1.close
+      receiver1.close
+      deadLetters1.close
+      sender2.close
+      receiver2.close
+      deadLetters2.close
+    }
+    .false! => {
+      sender1.close
+      receiver1.close
+      deadLetters1.close
+      sender2.close
+      receiver2.close
+      deadLetters2.close
+    }
+  }
+
+  test
+    .assert("broadcast returns one send result per actor", allSent)
+    .assert("broadcast sends to the first actor", firstGotNine)
+    .assert("broadcast sends to the second actor", secondGotNine)
 } in !

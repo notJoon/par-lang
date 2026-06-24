@@ -50,15 +50,17 @@ impl fmt::Display for PackageId {
 pub enum BuiltinPackage {
     Core,
     Basic,
+    Mpsc,
 }
 
 impl BuiltinPackage {
-    pub const ALL: &[Self] = &[Self::Core, Self::Basic];
+    pub const ALL: &[Self] = &[Self::Core, Self::Basic, Self::Mpsc];
 
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "core" => Some(BuiltinPackage::Core),
             "basic" => Some(BuiltinPackage::Basic),
+            "mpsc" => Some(BuiltinPackage::Mpsc),
             _ => None,
         }
     }
@@ -67,6 +69,7 @@ impl BuiltinPackage {
         match self {
             BuiltinPackage::Core => "core",
             BuiltinPackage::Basic => "basic",
+            BuiltinPackage::Mpsc => "mpsc",
         }
     }
 }

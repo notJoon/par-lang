@@ -12,6 +12,8 @@ mod http;
 mod int;
 mod json;
 mod list;
+#[cfg(not(target_family = "wasm"))]
+mod mailbox;
 mod map;
 mod nat;
 mod number;
@@ -45,6 +47,8 @@ pub fn builtin_packages() -> impl Iterator<Item = WorkspacePackage> {
             core_package(),
             #[cfg(not(target_family = "wasm"))]
             basic_package(),
+            #[cfg(not(target_family = "wasm"))]
+            mpsc_package(),
         ]
     });
     packages.into_iter().flatten()
@@ -62,6 +66,15 @@ fn basic_package() -> WorkspacePackage {
     let parsed = parse_builtin_sources("basic", BASIC_SOURCE_FILES);
     let externals = load_external_type_defs(BuiltinPackage::Basic);
     WorkspacePackage::new(PackageId::Builtin(BuiltinPackage::Basic), parsed)
+        .with_dependency("core", PackageId::Builtin(BuiltinPackage::Core))
+        .with_externals(externals)
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn mpsc_package() -> WorkspacePackage {
+    let parsed = parse_builtin_sources("mpsc", MPSC_SOURCE_FILES);
+    let externals = load_external_type_defs(BuiltinPackage::Mpsc);
+    WorkspacePackage::new(PackageId::Builtin(BuiltinPackage::Mpsc), parsed)
         .with_dependency("core", PackageId::Builtin(BuiltinPackage::Core))
         .with_externals(externals)
 }
@@ -189,11 +202,19 @@ const BASIC_SOURCE_FILES: &[BuiltinSourceFile] = &[
     },
 ];
 
+#[cfg(not(target_family = "wasm"))]
+const MPSC_SOURCE_FILES: &[BuiltinSourceFile] = &[BuiltinSourceFile {
+    relative_path_from_src: "Mailbox.par",
+    source: include_str!("../packages/mpsc/src/Mailbox.par"),
+}];
+
 pub fn get_builtin_source(filename: &str) -> Option<&'static str> {
     let (package, path) = filename.split_once('/')?;
     let files = match package {
         "core" => CORE_SOURCE_FILES,
         "basic" => BASIC_SOURCE_FILES,
+        #[cfg(not(target_family = "wasm"))]
+        "mpsc" => MPSC_SOURCE_FILES,
         _ => return None,
     };
     files

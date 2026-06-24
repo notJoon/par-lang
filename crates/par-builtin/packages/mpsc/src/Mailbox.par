@@ -1,0 +1,50 @@
+// Experimental bounded mailbox primitive for actor-model examples.
+export module Mailbox
+
+import {
+  @core/Nat
+  @core/Try
+}
+
+export {
+  type Backpressure = either {
+    .fail!
+  }
+
+  type SendError = either {
+    .full!
+    .closed!
+  }
+
+  type ReceiveError = either {
+    .closed!
+  }
+
+  type DeadLetterReason = either {
+    .full!
+    .closed!
+  }
+
+  type DeadLetter<a> = (DeadLetterReason) a
+
+  type Sender<a> = iterative box choice {
+    .trySend(a) => (Try<SendError, !>) self
+    .close => !
+  }
+
+  type Receiver<a> = iterative choice {
+    .receive => (Try<ReceiveError, a>) self
+    .close => !
+  }
+
+  type DeadLetters<a> = iterative choice {
+    .receive => (Try<ReceiveError, DeadLetter<a>>) self
+    .close => !
+  }
+
+  type Mailbox<a> = (Sender<a>) (Receiver<a>) DeadLetters<a>
+
+  dec New : [type a, Nat] Mailbox<a>
+}
+
+def New = external

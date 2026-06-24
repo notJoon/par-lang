@@ -1,6 +1,11 @@
 module Actor
 
-import @core/Nat
+import {
+  @core/List
+  @core/Nat
+  @core/Try
+  @mpsc/Mailbox
+}
 
 export {
   type ActorRef<msg> = iterative choice {
@@ -33,6 +38,15 @@ export {
 
   dec Counter : [Nat] CounterHandle
   dec CounterValueAfterScript : [Nat] Nat
+
+  dec Tell : [type msg, Mailbox.Sender<msg>, msg] (Try<Mailbox.SendError, !>) Mailbox.Sender<msg>
+  dec Ask :
+    [type a, type msg, Mailbox.Sender<msg>, box [Mailbox.Sender<a>] msg]
+    Try<Mailbox.SendError, Try<Mailbox.ReceiveError, a>>
+  dec Pipe :
+    [type a, type sourceMsg, type targetMsg, Mailbox.Sender<sourceMsg>, box [Mailbox.Sender<a>] sourceMsg, Mailbox.Sender<targetMsg>, box [a] targetMsg]
+    Try<Mailbox.SendError, !>
+  dec Broadcast : [type msg: box, List<Mailbox.Sender<msg>>, msg] List<Try<Mailbox.SendError, !>>
 }
 
 def Counter = [initial]
@@ -52,3 +66,43 @@ def CounterValueAfterScript = [initial] chan reply {
   counter.stop
   reply <> value
 }
+
+def Tell = [type msg, actor, message] do {
+  actor.trySend(message)[result]
+} in (result) actor
+
+def Ask = [type a, type msg, actor, build] do {
+  let (replySender) (replyReceiver) replyDeadLetters = Mailbox.New(type a, 1)
+  actor.trySend(build(replySender))[sent]
+  let answer = sent.case {
+    .ok! => do {
+      // TODO: Add timeout/cancel or explicit reply mailbox close semantics.
+      // If the actor accepts the request but never replies, this waits forever.
+      replyReceiver.receive[received]
+      replyReceiver.close
+      replyDeadLetters.close
+    } in .ok received,
+    .err reason => do {
+      replyReceiver.close
+      replyDeadLetters.close
+    } in .err reason,
+  }
+} in answer
+
+def Pipe = [type a, type sourceMsg, type targetMsg, source, build, target, map] do {
+  let asked = Ask(type a, type sourceMsg, source, build)
+} in asked.case {
+  .ok received => received.case {
+    .ok value => do {
+      target.trySend(map(value))[result]
+    } in result,
+    .err _ => .err .closed!,
+  }
+  .err reason => .err reason,
+}
+
+def Broadcast = [type msg: box, actors, message]
+  // `message` is sent to every actor, so `msg` must be reusable.
+  actors->List.Map(box [actor] do {
+    actor.trySend(message)[result]
+  } in result)

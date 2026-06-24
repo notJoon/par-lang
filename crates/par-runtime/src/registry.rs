@@ -15,6 +15,7 @@ pub enum PackageRef<'a> {
 impl PackageRef<'_> {
     pub const CORE: Self = Self::Builtin(BuiltinPackage::Core);
     pub const BASIC: Self = Self::Builtin(BuiltinPackage::Basic);
+    pub const MPSC: Self = Self::Builtin(BuiltinPackage::Mpsc);
 }
 
 #[derive(Hash, Eq, PartialEq, Clone, Copy, Debug)]
