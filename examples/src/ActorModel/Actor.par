@@ -1,0 +1,54 @@
+module Actor
+
+import @core/Nat
+
+export {
+  type ActorRef<msg> = iterative choice {
+    .tell(msg) => self
+    .stop => !
+  }
+
+  type ActorStep<state, msg> = recursive either {
+    .continue(state) box [state, msg] self
+    .stop!
+  }
+
+  type CounterReply = choice {
+    .value(Nat) => !
+  }
+
+  type CounterMessage = either {
+    .inc!
+    .add Nat
+    .get [Nat] !
+    .stop!
+  }
+
+  type CounterHandle = iterative choice {
+    .inc => self
+    .add(Nat) => self
+    .get => (Nat) self
+    .stop => !
+  }
+
+  dec Counter : [Nat] CounterHandle
+  dec CounterValueAfterScript : [Nat] Nat
+}
+
+def Counter = [initial]
+  let count = initial
+  in begin case {
+    .inc => let count = count + 1 in loop,
+    .add(amount) => let count = count + amount in loop,
+    .get => (count) loop,
+    .stop => !,
+  }
+
+def CounterValueAfterScript = [initial] chan reply {
+  let counter = Counter(initial)
+  counter.inc
+  counter.add(4)
+  counter.get[value]
+  counter.stop
+  reply <> value
+}

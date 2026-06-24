@@ -1,0 +1,20 @@
+module CounterExample
+
+import {
+  @core/Nat
+  @core/Test
+  ActorModel/Actor
+}
+
+def CounterStartingAtZero : Actor.CounterHandle =
+  Actor.Counter(0)
+
+def CounterScriptResult : Nat =
+  Actor.CounterValueAfterScript(10)
+
+def TestCounterTellAndAsk : [Test] ! = [test] do {
+  test.assert(
+    "counter actor handles typed tell and typed request/reply",
+    Actor.CounterValueAfterScript(10) == 15,
+  )
+} in !
